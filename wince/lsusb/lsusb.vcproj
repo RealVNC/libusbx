@@ -61,9 +61,10 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\libusb;.."
 				PreprocessorDefinitions="_DEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;DEBUG;_CONSOLE;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="3"
 				WarningLevel="3"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -77,6 +78,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
+				SubSystem="9"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -96,7 +98,7 @@
 			/>
 			<DeploymentTool
 				ForceDirty="-1"
-				RemoteDirectory=""
+				RemoteDirectory="%CSIDL_PROGRAM_FILES%\lsusb"
 				RegisterOutput="0"
 				AdditionalFiles=""
 			/>
@@ -132,9 +134,10 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\libusb;.."
 				PreprocessorDefinitions="_DEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;DEBUG;_CONSOLE;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="3"
 				WarningLevel="3"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -148,6 +151,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
+				SubSystem="9"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -203,9 +207,10 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\libusb;.."
 				PreprocessorDefinitions="_DEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;DEBUG;_CONSOLE;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="3"
 				WarningLevel="3"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -219,6 +224,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
+				SubSystem="9"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -274,9 +280,10 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\libusb;.."
 				PreprocessorDefinitions="_DEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;DEBUG;_CONSOLE;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="3"
 				WarningLevel="3"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -290,6 +297,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
+				SubSystem="9"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -345,9 +353,10 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\libusb;.."
 				PreprocessorDefinitions="_DEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;DEBUG;_CONSOLE;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="3"
 				WarningLevel="3"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -361,6 +370,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
+				SubSystem="9"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -416,9 +426,10 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\libusb;.."
 				PreprocessorDefinitions="_DEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;DEBUG;_CONSOLE;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="3"
 				WarningLevel="3"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -432,6 +443,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
+				SubSystem="9"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -487,9 +499,10 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\libusb;.."
 				PreprocessorDefinitions="_DEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;DEBUG;_CONSOLE;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="3"
 				WarningLevel="3"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -503,6 +516,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
+				SubSystem="9"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -558,7 +572,7 @@
 				ExecutionBucket="7"
 				AdditionalIncludeDirectories="..\..\libusb;.."
 				PreprocessorDefinitions="NDEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_CONSOLE;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="2"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -575,6 +589,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
+				SubSystem="9"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="0"
@@ -632,7 +647,7 @@
 				ExecutionBucket="7"
 				AdditionalIncludeDirectories="..\..\libusb;.."
 				PreprocessorDefinitions="NDEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_CONSOLE;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="2"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -649,6 +664,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
+				SubSystem="9"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="0"
@@ -706,7 +722,7 @@
 				ExecutionBucket="7"
 				AdditionalIncludeDirectories="..\..\libusb;.."
 				PreprocessorDefinitions="NDEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_CONSOLE;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="2"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -723,6 +739,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
+				SubSystem="9"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="0"
@@ -780,7 +797,7 @@
 				ExecutionBucket="7"
 				AdditionalIncludeDirectories="..\..\libusb;.."
 				PreprocessorDefinitions="NDEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_CONSOLE;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="2"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -797,6 +814,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
+				SubSystem="9"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="0"
@@ -854,7 +872,7 @@
 				ExecutionBucket="7"
 				AdditionalIncludeDirectories="..\..\libusb;.."
 				PreprocessorDefinitions="NDEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_CONSOLE;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="2"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -871,6 +889,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
+				SubSystem="9"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="0"
@@ -928,7 +947,7 @@
 				ExecutionBucket="7"
 				AdditionalIncludeDirectories="..\..\libusb;.."
 				PreprocessorDefinitions="NDEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_CONSOLE;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="2"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -945,6 +964,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
+				SubSystem="9"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="0"
@@ -1002,7 +1022,7 @@
 				ExecutionBucket="7"
 				AdditionalIncludeDirectories="..\..\libusb;.."
 				PreprocessorDefinitions="NDEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_CONSOLE;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="2"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -1019,6 +1039,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
+				SubSystem="9"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="0"
@@ -1062,6 +1083,10 @@
 			>
 			<File
 				RelativePath="..\..\examples\lsusb.c"
+				>
+			</File>
+			<File
+				RelativePath=".\main_wrapper.c"
 				>
 			</File>
 		</Filter>

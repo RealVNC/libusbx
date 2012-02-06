@@ -61,9 +61,10 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..;..\..\libusb"
 				PreprocessorDefinitions="_DEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_USRDLL;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="3"
 				WarningLevel="3"
+				DebugInformationFormat="3"
 				ForcedIncludeFiles=""
 			/>
 			<Tool
@@ -98,7 +99,7 @@
 			/>
 			<DeploymentTool
 				ForceDirty="-1"
-				RemoteDirectory=""
+				RemoteDirectory="%CSIDL_PROGRAM_FILES%\lsusb"
 				RegisterOutput="0"
 				AdditionalFiles=""
 			/>
@@ -134,9 +135,10 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..;..\..\libusb"
 				PreprocessorDefinitions="_DEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_USRDLL;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="3"
 				WarningLevel="3"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -206,9 +208,10 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..;..\..\libusb"
 				PreprocessorDefinitions="_DEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_USRDLL;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="3"
 				WarningLevel="3"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -278,9 +281,10 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..;..\..\libusb"
 				PreprocessorDefinitions="_DEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_USRDLL;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="3"
 				WarningLevel="3"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -350,9 +354,10 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..;..\..\libusb"
 				PreprocessorDefinitions="_DEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_USRDLL;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="3"
 				WarningLevel="3"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -422,9 +427,10 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..;..\..\libusb"
 				PreprocessorDefinitions="_DEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_USRDLL;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="3"
 				WarningLevel="3"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -494,9 +500,10 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..;..\..\libusb"
 				PreprocessorDefinitions="_DEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_USRDLL;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="3"
 				WarningLevel="3"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -566,7 +573,7 @@
 				ExecutionBucket="7"
 				AdditionalIncludeDirectories="..;..\..\libusb"
 				PreprocessorDefinitions="NDEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_USRDLL;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="2"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -641,7 +648,7 @@
 				ExecutionBucket="7"
 				AdditionalIncludeDirectories="..;..\..\libusb"
 				PreprocessorDefinitions="NDEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_USRDLL;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="2"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -716,7 +723,7 @@
 				ExecutionBucket="7"
 				AdditionalIncludeDirectories="..;..\..\libusb"
 				PreprocessorDefinitions="NDEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_USRDLL;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="2"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -791,7 +798,7 @@
 				ExecutionBucket="7"
 				AdditionalIncludeDirectories="..;..\..\libusb"
 				PreprocessorDefinitions="NDEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_USRDLL;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="2"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -866,7 +873,7 @@
 				ExecutionBucket="7"
 				AdditionalIncludeDirectories="..;..\..\libusb"
 				PreprocessorDefinitions="NDEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_USRDLL;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="2"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -941,7 +948,7 @@
 				ExecutionBucket="7"
 				AdditionalIncludeDirectories="..;..\..\libusb"
 				PreprocessorDefinitions="NDEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_USRDLL;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="2"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -1016,7 +1023,7 @@
 				ExecutionBucket="7"
 				AdditionalIncludeDirectories="..;..\..\libusb"
 				PreprocessorDefinitions="NDEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;WINCE;_USRDLL;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
-				MinimalRebuild="false"
+				MinimalRebuild="true"
 				RuntimeLibrary="2"
 				WarningLevel="3"
 				DebugInformationFormat="3"
