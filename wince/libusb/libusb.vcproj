@@ -1099,7 +1099,7 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\libusb\os\threads_wince.c"
+					RelativePath="..\..\libusb\os\threads_windows.c"
 					>
 				</File>
 				<File
@@ -1133,7 +1133,7 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\libusb\os\threads_wince.h"
+					RelativePath="..\..\libusb\os\threads_windows.h"
 					>
 				</File>
 				<File

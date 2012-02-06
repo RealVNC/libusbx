@@ -63,6 +63,10 @@ typedef unsigned __int32  uint32_t;
 #if defined(interface)
 #undef interface
 #endif
+#if defined(_WIN32_WCE)
+// Needed for "struct timeval" definition
+#include <winsock2.h>
+#endif
 #endif
 
 /** \def LIBUSB_CALL
