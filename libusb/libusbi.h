@@ -193,6 +193,8 @@ static inline void usbi_dbg(const char *format, ...)
 #include <os/threads_posix.h>
 #elif defined(OS_WINDOWS)
 #include <os/threads_windows.h>
+#elif defined(OS_WINCE)
+#include <os/threads_wince.h>
 #endif
 
 #if defined(OS_LINUX) || defined(OS_DARWIN) || defined(OS_OPENBSD)
@@ -200,6 +202,8 @@ static inline void usbi_dbg(const char *format, ...)
 #include <os/poll_posix.h>
 #elif defined(OS_WINDOWS)
 #include <os/poll_windows.h>
+#elif defined(OS_WINCE)
+#include <os/poll_wince.h>
 #endif
 
 #if defined(OS_WINDOWS) && !defined(__GCC__)
@@ -902,5 +906,6 @@ extern const struct usbi_os_backend linux_usbfs_backend;
 extern const struct usbi_os_backend darwin_backend;
 extern const struct usbi_os_backend openbsd_backend;
 extern const struct usbi_os_backend windows_backend;
+extern const struct usbi_os_backend wince_backend;
 
 #endif
