@@ -1,5 +1,7 @@
 /*
- * Windows compat: POSIX compatibility wrapper
+ * Windows CE compat: POSIX compatibility wrapper
+ * Portions Copyright (C) 2011 RealVNC Ltd.
+ * Heavily based on Windows compat: POSIX compatibility wrapper from
  * Copyright (C) 2009-2010 Pete Batard <pbatard@gmail.com>
  * With contributions from Michael Plante, Orin Eman et al.
  * Parts of poll implementation from libusb-win32, by Stephan Meyer et al.
@@ -36,17 +38,11 @@
 #define STATUS_REPARSE ((LONG)0x00000104L)
 #endif
 #define STATUS_COMPLETED_SYNCHRONOUSLY	STATUS_REPARSE
+// WinCE doesn't have a HasOverlappedIoCompleted() macro, so attempt to emulate it
+#define HasOverlappedIoCompleted(lpOverlapped) (((DWORD)(lpOverlapped)->Internal) != STATUS_PENDING)
 #define HasOverlappedIoCompletedSync(lpOverlapped)	(((DWORD)(lpOverlapped)->Internal) == STATUS_COMPLETED_SYNCHRONOUSLY)
 
 #define DUMMY_HANDLE ((HANDLE)(LONG_PTR)-2)
-
-enum windows_version {
-	WINDOWS_UNSUPPORTED,
-	WINDOWS_XP,
-	WINDOWS_2003,	// also includes XP 64
-	WINDOWS_VISTA_AND_LATER,
-};
-extern enum windows_version windows_version;
 
 #define MAX_FDS     256
 
