@@ -47,6 +47,11 @@ const struct usbi_os_backend * const usbi_backend = &wince_backend;
 #error "Unsupported OS"
 #endif
 
+#ifdef OS_WINCE
+// Workaround for WinCE not supporting getenv
+#define getenv(x) NULL
+#endif
+
 struct libusb_context *usbi_default_context = NULL;
 const struct libusb_version libusb_version_internal =
 	{ LIBUSB_MAJOR, LIBUSB_MINOR, LIBUSB_MICRO, LIBUSB_NANO,
