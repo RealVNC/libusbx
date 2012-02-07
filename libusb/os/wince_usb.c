@@ -85,6 +85,11 @@ static TCHAR err_string[ERR_BUFFER_SIZE];
 }
 #endif
 
+static struct wince_device_priv *_device_priv(struct libusb_device *dev)
+{
+        return (struct wince_device_priv *) dev->os_priv;
+}
+
 /* Hash table functions - modified From glibc 2.3.2:
    [Aho,Sethi,Ullman] Compilers: Principles, Techniques and Tools, 1986
    [Knuth]            The Art of Computer Programming, part 3 (6.4)  */
@@ -266,6 +271,24 @@ static int init_dllimports()
 	return LIBUSB_SUCCESS;
 }
 
+static int init_device(struct libusb_device *dev, UKW_DEVICE drv_dev,
+					   unsigned char bus_addr, unsigned char dev_addr)
+{
+	struct wince_device_priv *priv = _device_priv(dev);
+	int r;
+
+	dev->bus_number = bus_addr;
+	dev->device_address = dev_addr;
+	priv->dev = drv_dev;
+
+	r = UkwGetDeviceDescriptor(priv->dev, &(priv->desc));
+	if (r < 0)
+		goto out;
+	// TODO: cache config descriptor too
+out:
+	return r;
+}
+
 // Internal API functions
 static int wince_init(struct libusb_context *ctx)
 {
@@ -381,19 +404,126 @@ init_exit: // Holds semaphore here.
 	ReleaseSemaphore(semaphore, 1, NULL);	// increase count back to 1
 	CloseHandle(semaphore);
 	return r;
-	return LIBUSB_ERROR_NOT_SUPPORTED;
 }
 
 static void wince_exit(void)
 {
+	int i;
+	HANDLE semaphore;
+	TCHAR sem_name[11+1+8]; // strlen(libusb_init)+'\0'+(32-bit hex PID)
 
+	_stprintf(sem_name, _T("libusb_init%08X"), (unsigned int)GetCurrentProcessId()&0xFFFFFFFF);
+	semaphore = CreateSemaphore(NULL, 1, 1, sem_name);
+	if (semaphore == NULL) {
+		return;
+	}
+
+	// A successful wait brings our semaphore count to 0 (unsignaled)
+	// => any concurent wait stalls until the semaphore release
+	if (WaitForSingleObject(semaphore, INFINITE) != WAIT_OBJECT_0) {
+		CloseHandle(semaphore);
+		return;
+	}
+
+	// Only works if exits and inits are balanced exactly
+	if (--concurrent_usage < 0) {	// Last exit
+		exit_polling();
+
+		if (timer_thread) {
+			SetEvent(timer_request[1]); // actually the signal to quit the thread.
+			if (WAIT_OBJECT_0 != WaitForSingleObject(timer_thread, INFINITE)) {
+				usbi_dbg("could not wait for timer thread to quit");
+				TerminateThread(timer_thread, 1);
+			}
+			CloseHandle(timer_thread);
+			timer_thread = NULL;
+		}
+		for (i = 0; i < 2; i++) {
+			if (timer_request[i]) {
+				CloseHandle(timer_request[i]);
+				timer_request[i] = NULL;
+			}
+		}
+		if (timer_response) {
+			CloseHandle(timer_response);
+			timer_response = NULL;
+		}
+		if (timer_mutex) {
+			CloseHandle(timer_mutex);
+			timer_mutex = NULL;
+		}
+		htab_destroy();
+
+		if (driver_handle != INVALID_HANDLE_VALUE) {
+			UkwCloseDriver(driver_handle);
+			driver_handle = INVALID_HANDLE_VALUE;
+		}
+	}
+
+	ReleaseSemaphore(semaphore, 1, NULL);	// increase count back to 1
+	CloseHandle(semaphore);
 }
 
 static int wince_get_device_list(
 	struct libusb_context *ctx,
 	struct discovered_devs **discdevs)
 {
-	return LIBUSB_ERROR_NOT_SUPPORTED;
+	UKW_DEVICE devices[MAX_DEVICE_COUNT];
+	struct discovered_devs * new_devices = *discdevs;
+	DWORD count = 0, i;
+	struct libusb_device *dev;
+	unsigned char bus_addr, dev_addr;
+	unsigned long session_id;
+	BOOL success, need_unref = FALSE;
+	int r = LIBUSB_SUCCESS;
+
+	success = UkwGetDeviceList(driver_handle, devices, MAX_DEVICE_COUNT, &count);
+	if (!success) {
+		usbi_err(ctx, "could not get devices: %s", windows_error_str(0));
+		return LIBUSB_ERROR_OTHER;
+	}
+	for(i = 0; i < count; ++i) {
+		success = UkwGetDeviceAddress(devices[i], &bus_addr, &dev_addr, &session_id);
+		if (!success) {
+			usbi_err(ctx, "could not get device address for %d: %s", i, windows_error_str(0));
+			r = LIBUSB_ERROR_OTHER;
+			goto err_out;
+		}
+		dev = usbi_get_device_by_session_id(ctx, session_id);
+		if (dev) {
+			usbi_dbg("using existing device for %d/%d (session %ld)",
+					bus_addr, dev_addr, session_id);
+		} else {
+			usbi_dbg("allocating new device for %d/%d (session %ld)",
+					bus_addr, dev_addr, session_id);
+			dev = usbi_alloc_device(ctx, session_id);
+			if (!dev) {
+				r = LIBUSB_ERROR_NO_MEM;
+				goto err_out;
+			}
+			need_unref = TRUE;
+			r = init_device(dev, devices[i], bus_addr, dev_addr);
+			if (r < 0)
+				goto err_out;
+			r = usbi_sanitize_device(dev);
+			if (r < 0)
+				goto err_out;
+		}
+		new_devices = discovered_devs_append(new_devices, dev);
+		if (!discdevs) {
+			r = LIBUSB_ERROR_NO_MEM;
+			goto err_out;
+		}
+		need_unref = FALSE;
+	}
+	*discdevs = new_devices;
+	return r;
+err_out:
+	*discdevs = new_devices;
+	if (need_unref)
+		libusb_unref_device(dev);
+	UkwReleaseDeviceList(driver_handle, devices, count);
+	return r;
 }
 
 static int wince_open(struct libusb_device_handle *handle)
@@ -410,7 +540,11 @@ static int wince_get_device_descriptor(
    struct libusb_device *device,
    unsigned char *buffer, int *host_endian)
 {
-	return LIBUSB_ERROR_NOT_SUPPORTED;
+	struct wince_device_priv *priv = _device_priv(device);
+
+	*host_endian = 1;
+	memcpy(buffer, &priv->desc, DEVICE_DESC_LENGTH);
+	return LIBUSB_SUCCESS;
 }
 
 static int wince_get_active_config_descriptor(

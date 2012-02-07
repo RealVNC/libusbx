@@ -31,6 +31,7 @@
 #define safe_strlen(str) ((str==NULL)?0:strlen(str))
 #define safe_sprintf _sntprintf
 
+#define MAX_DEVICE_COUNT            256
 #define TIMER_REQUEST_RETRY_MS      100
 #define MAX_TIMER_SEMAPHORES        128
 #define ERR_BUFFER_SIZE             256
@@ -64,18 +65,6 @@
 
 #define DLL_DECLARE(api, ret, name, args)   DLL_DECLARE_PREFIXED(api, ret, , name, args)
 #define DLL_LOAD(dll, name, ret_on_failure) DLL_LOAD_PREFIXED(dll, , name, ret_on_failure)
-
-struct wince_device_priv {
-	int a;
-};
-
-struct wince_device_handle_priv {
-	int a;
-};
-
-struct wince_transfer_priv {
-	int a;
-};
 
 // This is a modified dump of the types in the ceusbkwrapper.h library header
 // with functions transformed into extern pointers.
@@ -132,3 +121,18 @@ DLL_DECLARE(WINAPI, BOOL, UkwGetDeviceDescriptor, (UKW_DEVICE, LPUKW_DEVICE_DESC
 DLL_DECLARE(WINAPI, void, UkwCloseDriver, (HANDLE));
 DLL_DECLARE(WINAPI, BOOL, UkwCancelTransfer, (UKW_DEVICE, LPOVERLAPPED, DWORD));
 DLL_DECLARE(WINAPI, BOOL, UkwIssueControlTransfer, (UKW_DEVICE, DWORD, LPUKW_CONTROL_HEADER, LPVOID, DWORD, LPDWORD, LPOVERLAPPED));
+
+
+
+struct wince_device_priv {
+	UKW_DEVICE dev;
+	UKW_DEVICE_DESCRIPTOR desc;
+};
+
+struct wince_device_handle_priv {
+	int a;
+};
+
+struct wince_transfer_priv {
+	int a;
+};
