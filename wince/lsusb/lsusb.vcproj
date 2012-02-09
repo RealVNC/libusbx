@@ -1072,7 +1072,7 @@
 	<References>
 		<ProjectReference
 			ReferencedProjectIdentifier="{6A49B75F-FB1C-45C0-B7C3-A7698255E7E9}"
-			RelativePathToProject=".\libusb\libusb.vcproj"
+			RelativePathToProject=".\libusb-1.0\libusb-1.0.vcproj"
 		/>
 	</References>
 	<Files>

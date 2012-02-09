@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="libusb"
+	Name="libusb-1.0"
 	ProjectGUID="{6A49B75F-FB1C-45C0-B7C3-A7698255E7E9}"
-	RootNamespace="libusb"
+	RootNamespace="libusb-1.0"
 	>
 	<Platforms>
 		<Platform
