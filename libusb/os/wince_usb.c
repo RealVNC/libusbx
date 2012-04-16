@@ -528,12 +528,14 @@ err_out:
 
 static int wince_open(struct libusb_device_handle *handle)
 {
-	return LIBUSB_ERROR_NOT_SUPPORTED;
+	// Nothing to do to open devices as a handle to it has
+	// been retrieved by wince_get_device_list
+	return LIBUSB_ERROR_NONE;
 }
 
 static void wince_close(struct libusb_device_handle *handle)
 {
-
+	// Nothing to do as wince_open does nothing.
 }
 
 static int wince_get_device_descriptor(
