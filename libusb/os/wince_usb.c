@@ -606,6 +606,9 @@ static int wince_release_interface(
 	int interface_number)
 {
 	struct wince_device_priv *priv = _device_priv(handle->dev);
+	if (!UkwSetInterfaceAlternateSetting(priv->dev, interface_number, 0)) {
+		return LIBUSB_ERROR_IO;
+	}
 	if (!UkwReleaseInterface(priv->dev, interface_number)) {
 		return LIBUSB_ERROR_OTHER;
 	}
