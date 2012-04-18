@@ -630,7 +630,11 @@ static int wince_clear_halt(
 	struct libusb_device_handle *handle,
 	unsigned char endpoint)
 {
-	return LIBUSB_ERROR_NOT_SUPPORTED;
+	struct wince_device_priv *priv = _device_priv(handle->dev);
+	if (!UkwClearHalt(priv->dev, endpoint)) {
+		return LIBUSB_ERROR_IO;
+	}
+	return LIBUSB_SUCCESS;
 }
 
 static int wince_reset_device(

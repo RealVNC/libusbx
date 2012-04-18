@@ -129,6 +129,7 @@ DLL_DECLARE(WINAPI, BOOL, UkwIssueControlTransfer, (UKW_DEVICE, DWORD, LPUKW_CON
 DLL_DECLARE(WINAPI, BOOL, UkwClaimInterface, (UKW_DEVICE, DWORD));
 DLL_DECLARE(WINAPI, BOOL, UkwReleaseInterface, (UKW_DEVICE, DWORD));
 DLL_DECLARE(WINAPI, BOOL, UkwSetInterfaceAlternateSetting, (UKW_DEVICE, DWORD, DWORD));
+DLL_DECLARE(WINAPI, BOOL, UkwClearHalt, (UKW_DEVICE, UCHAR));
 
 struct wince_device_priv {
 	UKW_DEVICE dev;
