@@ -580,14 +580,37 @@ static int wince_get_configuration(
    struct libusb_device_handle *handle,
    int *config)
 {
-	return LIBUSB_ERROR_NOT_SUPPORTED;
+	struct wince_device_priv *priv = _device_priv(handle->dev);
+	UCHAR cv = 0;
+	if (!UkwGetConfig(priv->dev, &cv)) {
+		return LIBUSB_ERROR_INVALID_PARAM;
+	}
+	(*config) = cv;
+	return 0;
 }
 
 static int wince_set_configuration(
 	struct libusb_device_handle *handle,
 	int config)
 {
-	return LIBUSB_ERROR_NOT_SUPPORTED;
+	struct wince_device_priv *priv = _device_priv(handle->dev);
+	// Setting configuration 0 places the device in Address state.
+	// This should correspond to the "unconfigured state" required by
+	// libusb when the specified configuration is -1.
+	UCHAR cv = (config < 0) ? 0 : config;
+	if (!UkwSetConfig(priv->dev, cv)) {
+		switch (GetLastError())
+		{
+		case ERROR_NOT_SUPPORTED:
+			return LIBUSB_ERROR_NOT_SUPPORTED;
+		case ERROR_INVALID_PARAMETER:
+		case ERROR_INVALID_HANDLE:
+			return LIBUSB_ERROR_INVALID_PARAM;
+		default:
+			return LIBUSB_ERROR_NOT_FOUND;
+		}
+	}
+	return 0;
 }
 
 static int wince_claim_interface(
