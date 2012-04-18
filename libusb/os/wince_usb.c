@@ -594,21 +594,33 @@ static int wince_claim_interface(
 	struct libusb_device_handle *handle,
 	int interface_number)
 {
-	return LIBUSB_ERROR_NOT_SUPPORTED;
+	struct wince_device_priv *priv = _device_priv(handle->dev);
+	if (!UkwClaimInterface(priv->dev, interface_number)) {
+		return LIBUSB_ERROR_OTHER;
+	}
+	return LIBUSB_SUCCESS;
 }
 
 static int wince_release_interface(
 	struct libusb_device_handle *handle,
 	int interface_number)
 {
-	return LIBUSB_ERROR_NOT_SUPPORTED;
+	struct wince_device_priv *priv = _device_priv(handle->dev);
+	if (!UkwReleaseInterface(priv->dev, interface_number)) {
+		return LIBUSB_ERROR_OTHER;
+	}
+	return LIBUSB_SUCCESS;
 }
 
 static int wince_set_interface_altsetting(
 	struct libusb_device_handle *handle,
 	int interface_number, int altsetting)
 {
-	return LIBUSB_ERROR_NOT_SUPPORTED;
+	struct wince_device_priv *priv = _device_priv(handle->dev);
+	if (!UkwSetInterfaceAlternateSetting(priv->dev, interface_number, altsetting)) {
+		return LIBUSB_ERROR_IO;
+	}
+	return LIBUSB_SUCCESS;
 }
 
 static int wince_clear_halt(
