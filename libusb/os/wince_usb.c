@@ -530,7 +530,7 @@ static int wince_open(struct libusb_device_handle *handle)
 {
 	// Nothing to do to open devices as a handle to it has
 	// been retrieved by wince_get_device_list
-	return LIBUSB_ERROR_NONE;
+	return LIBUSB_SUCCESS;
 }
 
 static void wince_close(struct libusb_device_handle *handle)
@@ -553,7 +553,13 @@ static int wince_get_active_config_descriptor(
 	struct libusb_device *device,
 	unsigned char *buffer, size_t len, int *host_endian)
 {
-	return LIBUSB_ERROR_NOT_SUPPORTED;
+	struct wince_device_priv *priv = _device_priv(device);
+	DWORD actualSize = len;
+	*host_endian = 1;
+	if (!UkwGetConfigDescriptor(priv->dev, UKW_ACTIVE_CONFIGURATION, buffer, len, &actualSize)) {
+		return LIBUSB_ERROR_INVALID_PARAM;
+	}
+	return actualSize;
 }
 
 static int wince_get_config_descriptor(
@@ -561,7 +567,13 @@ static int wince_get_config_descriptor(
 	uint8_t config_index,
 	unsigned char *buffer, size_t len, int *host_endian)
 {
-	return LIBUSB_ERROR_NOT_SUPPORTED;
+	struct wince_device_priv *priv = _device_priv(device);
+	DWORD actualSize = len;
+	*host_endian = 1;
+	if (!UkwGetConfigDescriptor(priv->dev, config_index, buffer, len, &actualSize)) {
+		return LIBUSB_ERROR_INVALID_PARAM;
+	}
+	return actualSize;
 }
 
 static int wince_get_configuration(

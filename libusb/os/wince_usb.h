@@ -113,15 +113,19 @@ typedef struct {
 /* Don't block when waiting for memory allocations */
 #define UKW_TF_DONT_BLOCK_FOR_MEM 0x00080000
 
+/* Value to use when dealing with configuration values, such as UkwGetConfigDescriptor, 
+ * to specify the currently active configuration for the device. */
+#define UKW_ACTIVE_CONFIGURATION -1
+
 DLL_DECLARE(WINAPI, HANDLE, UkwOpenDriver, ());
 DLL_DECLARE(WINAPI, BOOL, UkwGetDeviceList, (HANDLE, LPUKW_DEVICE, DWORD, LPDWORD));
 DLL_DECLARE(WINAPI, void, UkwReleaseDeviceList, (HANDLE, LPUKW_DEVICE, DWORD));
 DLL_DECLARE(WINAPI, BOOL, UkwGetDeviceAddress, (UKW_DEVICE, unsigned char*, unsigned char*, unsigned long*));
 DLL_DECLARE(WINAPI, BOOL, UkwGetDeviceDescriptor, (UKW_DEVICE, LPUKW_DEVICE_DESCRIPTOR));
+DLL_DECLARE(WINAPI, BOOL, UkwGetConfigDescriptor, (UKW_DEVICE, DWORD, LPVOID, DWORD, LPDWORD));
 DLL_DECLARE(WINAPI, void, UkwCloseDriver, (HANDLE));
 DLL_DECLARE(WINAPI, BOOL, UkwCancelTransfer, (UKW_DEVICE, LPOVERLAPPED, DWORD));
 DLL_DECLARE(WINAPI, BOOL, UkwIssueControlTransfer, (UKW_DEVICE, DWORD, LPUKW_CONTROL_HEADER, LPVOID, DWORD, LPDWORD, LPOVERLAPPED));
-
 
 
 struct wince_device_priv {
