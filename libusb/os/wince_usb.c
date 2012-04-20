@@ -583,7 +583,11 @@ static int wince_get_configuration(
 	struct wince_device_priv *priv = _device_priv(handle->dev);
 	UCHAR cv = 0;
 	if (!UkwGetConfig(priv->dev, &cv)) {
-		return LIBUSB_ERROR_INVALID_PARAM;
+		if (GetLastError() == ERROR_INVALID_HANDLE) {
+			return LIBUSB_ERROR_NO_DEVICE;
+		} else {
+			return LIBUSB_ERROR_INVALID_PARAM;
+		}
 	}
 	(*config) = cv;
 	return LIBUSB_SUCCESS;
@@ -603,8 +607,9 @@ static int wince_set_configuration(
 		{
 		case ERROR_NOT_SUPPORTED:
 			return LIBUSB_ERROR_NOT_SUPPORTED;
-		case ERROR_INVALID_PARAMETER:
 		case ERROR_INVALID_HANDLE:
+			return LIBUSB_ERROR_NO_DEVICE;
+		case ERROR_INVALID_PARAMETER:
 			return LIBUSB_ERROR_INVALID_PARAM;
 		default:
 			return LIBUSB_ERROR_NOT_FOUND;
@@ -669,6 +674,7 @@ static int wince_reset_device(
 			case ERROR_NOT_SUPPORTED:
 				return LIBUSB_ERROR_NOT_SUPPORTED;
 			case ERROR_INVALID_HANDLE:
+				return LIBUSB_ERROR_NO_DEVICE;
 			case ERROR_INVALID_PARAMETER:
 				return LIBUSB_ERROR_INVALID_PARAM;
 			default:
