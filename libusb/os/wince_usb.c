@@ -688,21 +688,59 @@ static int wince_kernel_driver_active(
 	struct libusb_device_handle *handle,
 	int interface_number)
 {
-	return LIBUSB_ERROR_NOT_SUPPORTED;
+	struct wince_device_priv *priv = _device_priv(handle->dev);
+	BOOL result = FALSE;
+	if (!UkwKernelDriverActive(priv->dev, interface_number, &result)) {
+		switch (GetLastError()) {
+			case ERROR_INVALID_HANDLE:
+				return LIBUSB_ERROR_NO_DEVICE;
+			case ERROR_NOT_SUPPORTED:
+				return LIBUSB_ERROR_NOT_SUPPORTED;
+			default:
+				return LIBUSB_ERROR_INVALID_PARAM;
+		}
+	}
+	return result ? 1 : 0;
 }
 
 static int wince_detach_kernel_driver(
 	struct libusb_device_handle *handle,
 	int interface_number)
 {
-	return LIBUSB_ERROR_NOT_SUPPORTED;
+	struct wince_device_priv *priv = _device_priv(handle->dev);
+	if (!UkwDetachKernelDriver(priv->dev, interface_number)) {
+		switch (GetLastError()) {
+			case ERROR_INVALID_HANDLE:
+				return LIBUSB_ERROR_NO_DEVICE;
+			case ERROR_NOT_SUPPORTED:
+				return LIBUSB_ERROR_NOT_SUPPORTED;
+			case ERROR_NOT_FOUND:
+				return LIBUSB_ERROR_NOT_FOUND;
+			default:
+				return LIBUSB_ERROR_INVALID_PARAM;
+		}
+	}
+	return LIBUSB_SUCCESS;
 }
 
 static int wince_attach_kernel_driver(
 	struct libusb_device_handle *handle,
 	int interface_number)
 {
-	return LIBUSB_ERROR_NOT_SUPPORTED;
+	struct wince_device_priv *priv = _device_priv(handle->dev);
+	if (!UkwAttachKernelDriver(priv->dev, interface_number)) {
+		switch (GetLastError()) {
+			case ERROR_INVALID_HANDLE:
+				return LIBUSB_ERROR_NO_DEVICE;
+			case ERROR_NOT_SUPPORTED:
+				return LIBUSB_ERROR_NOT_SUPPORTED;
+			case ERROR_BUSY:
+				return LIBUSB_ERROR_BUSY;
+			default:
+				return LIBUSB_ERROR_INVALID_PARAM;
+		}
+	}	
+	return LIBUSB_SUCCESS;
 }
 
 static void wince_destroy_device(
