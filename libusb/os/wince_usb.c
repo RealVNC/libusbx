@@ -475,6 +475,7 @@ static int wince_get_device_list(
 	unsigned char bus_addr, dev_addr;
 	unsigned long session_id;
 	BOOL success, need_unref = FALSE;
+	DWORD release_list_offset = 0;
 	int r = LIBUSB_SUCCESS;
 
 	success = UkwGetDeviceList(driver_handle, devices, MAX_DEVICE_COUNT, &count);
@@ -483,6 +484,7 @@ static int wince_get_device_list(
 		return LIBUSB_ERROR_OTHER;
 	}
 	for(i = 0; i < count; ++i) {
+		release_list_offset = i;
 		success = UkwGetDeviceAddress(devices[i], &bus_addr, &dev_addr, &session_id);
 		if (!success) {
 			usbi_err(ctx, "could not get device address for %d: %s", i, windows_error_str(0));
@@ -493,6 +495,10 @@ static int wince_get_device_list(
 		if (dev) {
 			usbi_dbg("using existing device for %d/%d (session %ld)",
 					bus_addr, dev_addr, session_id);
+			// Release just this element in the device list (as we already hold a 
+			// reference to it).
+			UkwReleaseDeviceList(driver_handle, &devices[i], 1);
+			release_list_offset++;
 		} else {
 			usbi_dbg("allocating new device for %d/%d (session %ld)",
 					bus_addr, dev_addr, session_id);
@@ -522,7 +528,10 @@ err_out:
 	*discdevs = new_devices;
 	if (need_unref)
 		libusb_unref_device(dev);
-	UkwReleaseDeviceList(driver_handle, devices, count);
+	// Release the remainder of the unprocessed device list.
+	// The devices added to new_devices already will still be passed up to libusb, 
+	// which can dispose of them at its leisure.
+	UkwReleaseDeviceList(driver_handle, &devices[release_list_offset], count - release_list_offset);
 	return r;
 }
 
@@ -746,7 +755,8 @@ static int wince_attach_kernel_driver(
 static void wince_destroy_device(
 	struct libusb_device *dev)
 {
-
+	struct wince_device_priv *priv = _device_priv(dev);
+	UkwReleaseDeviceList(driver_handle, &priv->dev, 1);
 }
 
 static int wince_submit_transfer(
