@@ -109,7 +109,7 @@ static __inline BOOL cancel_io(int _index)
 
 // Fake filehandle open and close functions
 // TODO: Make this properly thread-safe with
-// a standard primative and eliminate the change
+// a standard primative and eliminate the chance
 // of reuse on wrap-around.
 static volatile LONG open_id_spinlock = 0;
 static volatile int open_id = 1;

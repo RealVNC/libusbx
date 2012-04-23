@@ -759,10 +759,98 @@ static void wince_destroy_device(
 	UkwReleaseDeviceList(driver_handle, &priv->dev, 1);
 }
 
+static void wince_clear_transfer_priv(
+	struct usbi_transfer *itransfer)
+{
+	struct wince_transfer_priv *transfer_priv = (struct wince_transfer_priv*)usbi_transfer_get_os_priv(itransfer);
+	struct winfd wfd = fd_to_winfd(transfer_priv->pollable_fd.fd);
+	CloseHandle(wfd.overlapped->hEvent);
+	free(wfd.overlapped);
+	usbi_free_fd(transfer_priv->pollable_fd.fd);
+}
+
+static int wince_submit_control_transfer(struct usbi_transfer *itransfer)
+{
+	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_context *ctx = DEVICE_CTX(transfer->dev_handle->dev);
+	struct wince_transfer_priv *transfer_priv = (struct wince_transfer_priv*)usbi_transfer_get_os_priv(itransfer);
+	struct wince_device_priv *priv = _device_priv(transfer->dev_handle->dev);
+	BOOL direction_in, ret;
+	struct winfd wfd;
+	DWORD flags;
+	OVERLAPPED* overlapped;
+	
+	// Split out control setup header and data buffer
+	PUKW_CONTROL_HEADER setup = (PUKW_CONTROL_HEADER) transfer->buffer;
+	DWORD bufLen = transfer->length - sizeof(setup);
+	PVOID buf = (PVOID) &transfer->buffer[sizeof(setup)];
+
+	transfer_priv->pollable_fd = INVALID_WINFD;
+	direction_in = transfer->endpoint & LIBUSB_ENDPOINT_IN;
+	flags = direction_in ? UKW_TF_IN_TRANSFER : UKW_TF_OUT_TRANSFER;
+
+	overlapped = calloc(1, sizeof(OVERLAPPED));
+	if (!overlapped) {
+		return LIBUSB_ERROR_NO_MEM;
+	}
+
+	overlapped->hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+	if (overlapped->hEvent == NULL) {
+		usbi_err(ctx, "Failed to create event for async transfer");
+		free(overlapped);
+		return LIBUSB_ERROR_NO_MEM;
+	}
+
+	wfd = usbi_create_fd(overlapped->hEvent, direction_in ? RW_READ : RW_WRITE);
+	// Always use the handle returned from usbi_create_fd (wfd.handle)
+	if (wfd.fd < 0) {
+		CloseHandle(overlapped->hEvent);
+		free(overlapped);
+		return LIBUSB_ERROR_NO_MEM;
+	}
+
+	transfer_priv->pollable_fd = wfd;
+	ret = UkwIssueControlTransfer(priv->dev, flags, setup, buf, bufLen, &transfer->actual_length, overlapped);
+	if (!ret) {
+		usbi_err(ctx, "UkwIssueControlTransfer failed: error %d", GetLastError());
+		wince_clear_transfer_priv(itransfer);
+		return LIBUSB_ERROR_IO;
+	}
+	usbi_add_pollfd(ctx, transfer_priv->pollable_fd.fd, POLLIN);
+#if !defined(DYNAMIC_FDS)
+	usbi_fd_notification(ctx);
+#endif
+
+	return LIBUSB_SUCCESS;
+}
+
+static int wince_submit_bulk_transfer(struct usbi_transfer *itransfer)
+{
+	return LIBUSB_ERROR_NOT_SUPPORTED;
+}
+
+static int wince_submit_iso_transfer(struct usbi_transfer *itransfer)
+{
+	return LIBUSB_ERROR_NOT_SUPPORTED;
+}
+
 static int wince_submit_transfer(
 	struct usbi_transfer *itransfer)
 {
-	return LIBUSB_ERROR_NOT_SUPPORTED;
+	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+
+	switch (transfer->type) {
+	case LIBUSB_TRANSFER_TYPE_CONTROL:
+		return wince_submit_control_transfer(itransfer);
+	case LIBUSB_TRANSFER_TYPE_BULK:
+	case LIBUSB_TRANSFER_TYPE_INTERRUPT:
+		return wince_submit_bulk_transfer(itransfer);
+	case LIBUSB_TRANSFER_TYPE_ISOCHRONOUS:
+		return wince_submit_iso_transfer(itransfer);
+	default:
+		usbi_err(TRANSFER_CTX(transfer), "unknown endpoint type %d", transfer->type);
+		return LIBUSB_ERROR_INVALID_PARAM;
+	}
 }
 
 static int wince_cancel_transfer(
@@ -771,17 +859,118 @@ static int wince_cancel_transfer(
 	return LIBUSB_ERROR_NOT_SUPPORTED;
 }
 
-static int wince_clear_transfer_priv(
-	struct usbi_transfer *itransfer)
+static void wince_transfer_callback(struct usbi_transfer *itransfer, uint32_t io_result, uint32_t io_size)
 {
-	return LIBUSB_ERROR_NOT_SUPPORTED;
+	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	int status;
+
+	usbi_dbg("handling I/O completion with errcode %d", io_result);
+
+	switch(io_result) {
+	case ERROR_SUCCESS:
+		itransfer->transferred += io_size;
+		status = LIBUSB_TRANSFER_COMPLETED;
+		break;
+	case ERROR_GEN_FAILURE:
+		usbi_dbg("detected endpoint stall");
+		status = LIBUSB_TRANSFER_STALL;
+		break;
+	case ERROR_SEM_TIMEOUT:
+		usbi_dbg("detected semaphore timeout");
+		status = LIBUSB_TRANSFER_TIMED_OUT;
+		break;
+	case ERROR_OPERATION_ABORTED:
+		if (itransfer->flags & USBI_TRANSFER_TIMED_OUT) {
+			usbi_dbg("detected timeout");
+			status = LIBUSB_TRANSFER_TIMED_OUT;
+		} else {
+			usbi_dbg("detected operation aborted");
+			status = LIBUSB_TRANSFER_CANCELLED;
+		}
+		break;
+	default:
+		usbi_err(ITRANSFER_CTX(itransfer), "detected I/O error: %s", windows_error_str(0));
+		status = LIBUSB_TRANSFER_ERROR;
+		break;
+	}
+	wince_clear_transfer_priv(itransfer);
+	usbi_handle_transfer_completion(itransfer, (enum libusb_transfer_status)status);
+}
+
+static void wince_handle_callback (struct usbi_transfer *itransfer, uint32_t io_result, uint32_t io_size)
+{
+	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+
+	switch (transfer->type) {
+	case LIBUSB_TRANSFER_TYPE_CONTROL:
+	case LIBUSB_TRANSFER_TYPE_BULK:
+	case LIBUSB_TRANSFER_TYPE_INTERRUPT:
+	case LIBUSB_TRANSFER_TYPE_ISOCHRONOUS:
+		wince_transfer_callback (itransfer, io_result, io_size);
+		break;
+	default:
+		usbi_err(ITRANSFER_CTX(itransfer), "unknown endpoint type %d", transfer->type);
+	}
 }
 
 static int wince_handle_events(
 	struct libusb_context *ctx,
 	struct pollfd *fds, POLL_NFDS_TYPE nfds, int num_ready)
 {
-	return LIBUSB_ERROR_NOT_SUPPORTED;
+	struct wince_transfer_priv* transfer_priv = NULL;
+	POLL_NFDS_TYPE i = 0;
+	BOOL found = FALSE;
+	struct usbi_transfer *transfer;
+	DWORD io_size, io_result;
+
+	usbi_mutex_lock(&ctx->open_devs_lock);
+	for (i = 0; i < nfds && num_ready > 0; i++) {
+
+		usbi_dbg("checking fd %d with revents = %04x", fds[i].fd, fds[i].revents);
+
+		if (!fds[i].revents) {
+			continue;
+		}
+
+		num_ready--;
+
+		// Because a Windows OVERLAPPED is used for poll emulation,
+		// a pollable fd is created and stored with each transfer
+		usbi_mutex_lock(&ctx->flying_transfers_lock);
+		list_for_each_entry(transfer, &ctx->flying_transfers, list, struct usbi_transfer) {
+			transfer_priv = usbi_transfer_get_os_priv(transfer);
+			if (transfer_priv->pollable_fd.fd == fds[i].fd) {
+				found = TRUE;
+				break;
+			}
+		}
+		usbi_mutex_unlock(&ctx->flying_transfers_lock);
+
+		if (found) {
+			// Handle async requests that completed synchronously first
+			if (HasOverlappedIoCompleted(transfer_priv->pollable_fd.overlapped)) {
+				io_result = (DWORD)transfer_priv->pollable_fd.overlapped->Internal;
+				io_size = (DWORD)transfer_priv->pollable_fd.overlapped->InternalHigh;
+			// Regular async overlapped (FIXME: This probably is not correct!)
+			/*} else if (GetOverlappedResult(transfer_priv->pollable_fd.handle,
+				transfer_priv->pollable_fd.overlapped, &io_size, false)) {
+				io_result = NO_ERROR;*/
+			} else {
+				io_result = GetLastError();
+			}
+			usbi_remove_pollfd(ctx, transfer_priv->pollable_fd.fd);
+			// let handle_callback free the event using the transfer wfd
+			// If you don't use the transfer wfd, you run a risk of trying to free a
+			// newly allocated wfd that took the place of the one from the transfer.
+			wince_handle_callback(transfer, io_result, io_size);
+		} else {
+			usbi_err(ctx, "could not find a matching transfer for fd %x", fds[i]);
+			return LIBUSB_ERROR_NOT_FOUND;
+		}
+	}
+
+	usbi_mutex_unlock(&ctx->open_devs_lock);
+	return LIBUSB_SUCCESS;
 }
 
 /*

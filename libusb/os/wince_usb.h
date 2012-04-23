@@ -24,6 +24,7 @@
 #pragma once
 
 #include <windows.h>
+#include "poll_wince.h"
 
 #define safe_free(p) do {if (p != NULL) {free((void*)p); p = NULL;}} while(0)
 #define safe_strcmp(str1, str2) strcmp(((str1==NULL)?"<NULL>":str1), ((str2==NULL)?"<NULL>":str2))
@@ -147,5 +148,6 @@ struct wince_device_handle_priv {
 };
 
 struct wince_transfer_priv {
-	int a;
+	struct winfd pollable_fd;
+	uint8_t interface_number;
 };
