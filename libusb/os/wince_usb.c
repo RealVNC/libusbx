@@ -765,7 +765,6 @@ static void wince_clear_transfer_priv(
 	struct wince_transfer_priv *transfer_priv = (struct wince_transfer_priv*)usbi_transfer_get_os_priv(itransfer);
 	struct winfd wfd = fd_to_winfd(transfer_priv->pollable_fd.fd);
 	CloseHandle(wfd.overlapped->hEvent);
-	free(wfd.overlapped);
 	usbi_free_fd(transfer_priv->pollable_fd.fd);
 }
 
@@ -778,7 +777,7 @@ static int wince_submit_control_transfer(struct usbi_transfer *itransfer)
 	BOOL direction_in, ret;
 	struct winfd wfd;
 	DWORD flags;
-	OVERLAPPED* overlapped;
+	HANDLE eventHandle;
 	
 	// Split out control setup header and data buffer
 	PUKW_CONTROL_HEADER setup = (PUKW_CONTROL_HEADER) transfer->buffer;
@@ -789,28 +788,20 @@ static int wince_submit_control_transfer(struct usbi_transfer *itransfer)
 	direction_in = transfer->endpoint & LIBUSB_ENDPOINT_IN;
 	flags = direction_in ? UKW_TF_IN_TRANSFER : UKW_TF_OUT_TRANSFER;
 
-	overlapped = calloc(1, sizeof(OVERLAPPED));
-	if (!overlapped) {
-		return LIBUSB_ERROR_NO_MEM;
-	}
-
-	overlapped->hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-	if (overlapped->hEvent == NULL) {
+	eventHandle = CreateEvent(NULL, FALSE, FALSE, NULL);
+	if (eventHandle == NULL) {
 		usbi_err(ctx, "Failed to create event for async transfer");
-		free(overlapped);
 		return LIBUSB_ERROR_NO_MEM;
 	}
 
-	wfd = usbi_create_fd(overlapped->hEvent, direction_in ? RW_READ : RW_WRITE);
-	// Always use the handle returned from usbi_create_fd (wfd.handle)
+	wfd = usbi_create_fd(eventHandle, direction_in ? RW_READ : RW_WRITE);
 	if (wfd.fd < 0) {
-		CloseHandle(overlapped->hEvent);
-		free(overlapped);
+		CloseHandle(eventHandle);
 		return LIBUSB_ERROR_NO_MEM;
 	}
 
 	transfer_priv->pollable_fd = wfd;
-	ret = UkwIssueControlTransfer(priv->dev, flags, setup, buf, bufLen, &transfer->actual_length, overlapped);
+	ret = UkwIssueControlTransfer(priv->dev, flags, setup, buf, bufLen, &transfer->actual_length, wfd.overlapped);
 	if (!ret) {
 		usbi_err(ctx, "UkwIssueControlTransfer failed: error %d", GetLastError());
 		wince_clear_transfer_priv(itransfer);
@@ -871,6 +862,7 @@ static void wince_transfer_callback(struct usbi_transfer *itransfer, uint32_t io
 		itransfer->transferred += io_size;
 		status = LIBUSB_TRANSFER_COMPLETED;
 		break;
+	case ERROR_NOT_SUPPORTED:
 	case ERROR_GEN_FAILURE:
 		usbi_dbg("detected endpoint stall");
 		status = LIBUSB_TRANSFER_STALL;
