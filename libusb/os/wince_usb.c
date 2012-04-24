@@ -816,7 +816,7 @@ static int wince_submit_control_transfer(struct usbi_transfer *itransfer)
 		wince_clear_transfer_priv(itransfer);
 		return LIBUSB_ERROR_IO;
 	}
-	usbi_add_pollfd(ctx, transfer_priv->pollable_fd.fd, POLLIN);
+	usbi_add_pollfd(ctx, transfer_priv->pollable_fd.fd, direction_in ? POLLIN : POLLOUT);
 #if !defined(DYNAMIC_FDS)
 	usbi_fd_notification(ctx);
 #endif
