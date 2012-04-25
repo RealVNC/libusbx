@@ -265,9 +265,21 @@ static int init_dllimports()
 	DLL_LOAD(ceusbkwrapper.dll, UkwReleaseDeviceList, TRUE);
 	DLL_LOAD(ceusbkwrapper.dll, UkwGetDeviceAddress, TRUE);
 	DLL_LOAD(ceusbkwrapper.dll, UkwGetDeviceDescriptor, TRUE);
+	DLL_LOAD(ceusbkwrapper.dll, UkwGetConfigDescriptor, TRUE);
 	DLL_LOAD(ceusbkwrapper.dll, UkwCloseDriver, TRUE);
 	DLL_LOAD(ceusbkwrapper.dll, UkwCancelTransfer, TRUE);
 	DLL_LOAD(ceusbkwrapper.dll, UkwIssueControlTransfer, TRUE);
+	DLL_LOAD(ceusbkwrapper.dll, UkwClaimInterface, TRUE);
+	DLL_LOAD(ceusbkwrapper.dll, UkwReleaseInterface, TRUE);
+	DLL_LOAD(ceusbkwrapper.dll, UkwSetInterfaceAlternateSetting, TRUE);
+	DLL_LOAD(ceusbkwrapper.dll, UkwClearHalt, TRUE);
+	DLL_LOAD(ceusbkwrapper.dll, UkwGetConfig, TRUE);
+	DLL_LOAD(ceusbkwrapper.dll, UkwSetConfig, TRUE);
+	DLL_LOAD(ceusbkwrapper.dll, UkwResetDevice, TRUE);
+	DLL_LOAD(ceusbkwrapper.dll, UkwKernelDriverActive, TRUE);
+	DLL_LOAD(ceusbkwrapper.dll, UkwAttachKernelDriver, TRUE);
+	DLL_LOAD(ceusbkwrapper.dll, UkwDetachKernelDriver, TRUE);
+	DLL_LOAD(ceusbkwrapper.dll, UkwIssueBulkTransfer, TRUE);
 	return LIBUSB_SUCCESS;
 }
 
