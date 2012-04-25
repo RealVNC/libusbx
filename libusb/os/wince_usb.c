@@ -817,7 +817,45 @@ static int wince_submit_control_transfer(struct usbi_transfer *itransfer)
 
 static int wince_submit_bulk_transfer(struct usbi_transfer *itransfer)
 {
-	return LIBUSB_ERROR_NOT_SUPPORTED;
+	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_context *ctx = DEVICE_CTX(transfer->dev_handle->dev);
+	struct wince_transfer_priv *transfer_priv = (struct wince_transfer_priv*)usbi_transfer_get_os_priv(itransfer);
+	struct wince_device_priv *priv = _device_priv(transfer->dev_handle->dev);
+	BOOL direction_in, ret;
+	struct winfd wfd;
+	DWORD flags;
+	HANDLE eventHandle;
+		
+	transfer_priv->pollable_fd = INVALID_WINFD;
+	direction_in = transfer->endpoint & LIBUSB_ENDPOINT_IN;
+	flags = direction_in ? UKW_TF_IN_TRANSFER : UKW_TF_OUT_TRANSFER;
+
+	eventHandle = CreateEvent(NULL, FALSE, FALSE, NULL);
+	if (eventHandle == NULL) {
+		usbi_err(ctx, "Failed to create event for async transfer");
+		return LIBUSB_ERROR_NO_MEM;
+	}
+
+	wfd = usbi_create_fd(eventHandle, direction_in ? RW_READ : RW_WRITE);
+	if (wfd.fd < 0) {
+		CloseHandle(eventHandle);
+		return LIBUSB_ERROR_NO_MEM;
+	}
+
+	transfer_priv->pollable_fd = wfd;
+	ret = UkwIssueBulkTransfer(priv->dev, flags, transfer->endpoint, transfer->buffer, 
+		transfer->length, &transfer->actual_length, wfd.overlapped);
+	if (!ret) {
+		usbi_err(ctx, "UkwIssueBulkTransfer failed: error %d", GetLastError());
+		wince_clear_transfer_priv(itransfer);
+		return LIBUSB_ERROR_IO;
+	}
+	usbi_add_pollfd(ctx, transfer_priv->pollable_fd.fd, direction_in ? POLLIN : POLLOUT);
+#if !defined(DYNAMIC_FDS)
+	usbi_fd_notification(ctx);
+#endif
+
+	return LIBUSB_SUCCESS;
 }
 
 static int wince_submit_iso_transfer(struct usbi_transfer *itransfer)
