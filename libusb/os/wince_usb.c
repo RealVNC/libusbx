@@ -590,7 +590,7 @@ static int wince_get_config_descriptor(
 {
 	struct wince_device_priv *priv = _device_priv(device);
 	DWORD actualSize = len;
-	*host_endian = 1;
+	*host_endian = 0;
 	if (!UkwGetConfigDescriptor(priv->dev, config_index, buffer, len, &actualSize)) {
 		return LIBUSB_ERROR_INVALID_PARAM;
 	}
@@ -793,11 +793,11 @@ static int wince_submit_control_transfer(struct usbi_transfer *itransfer)
 	
 	// Split out control setup header and data buffer
 	PUKW_CONTROL_HEADER setup = (PUKW_CONTROL_HEADER) transfer->buffer;
-	DWORD bufLen = transfer->length - sizeof(setup);
-	PVOID buf = (PVOID) &transfer->buffer[sizeof(setup)];
+	DWORD bufLen = transfer->length - sizeof(UKW_CONTROL_HEADER);
+	PVOID buf = (PVOID) &transfer->buffer[sizeof(UKW_CONTROL_HEADER)];
 
 	transfer_priv->pollable_fd = INVALID_WINFD;
-	direction_in = transfer->endpoint & LIBUSB_ENDPOINT_IN;
+	direction_in = setup->bmRequestType & LIBUSB_ENDPOINT_IN;
 	flags = direction_in ? UKW_TF_IN_TRANSFER : UKW_TF_OUT_TRANSFER;
 
 	eventHandle = CreateEvent(NULL, FALSE, FALSE, NULL);
