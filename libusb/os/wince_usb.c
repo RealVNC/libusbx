@@ -776,8 +776,28 @@ static void wince_clear_transfer_priv(
 {
 	struct wince_transfer_priv *transfer_priv = (struct wince_transfer_priv*)usbi_transfer_get_os_priv(itransfer);
 	struct winfd wfd = fd_to_winfd(transfer_priv->pollable_fd.fd);
+	// No need to cancel transfer as it is either complete or abandoned
+	wfd.itransfer = NULL;
 	CloseHandle(wfd.overlapped->hEvent);
 	usbi_free_fd(transfer_priv->pollable_fd.fd);
+}
+
+static int wince_cancel_transfer(
+	struct usbi_transfer *itransfer)
+{
+	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct wince_device_priv *priv = _device_priv(transfer->dev_handle->dev);
+	struct wince_transfer_priv *transfer_priv = (struct wince_transfer_priv*)usbi_transfer_get_os_priv(itransfer);
+	
+	if (!UkwCancelTransfer(priv->dev, transfer_priv->pollable_fd.overlapped, UKW_TF_NO_WAIT)) {
+		switch (GetLastError()) {
+			case ERROR_INVALID_HANDLE:
+				return LIBUSB_ERROR_NO_DEVICE;
+			default:
+				return LIBUSB_ERROR_INVALID_PARAM;
+		}
+	}
+	return LIBUSB_SUCCESS;
 }
 
 static int wince_submit_control_transfer(struct usbi_transfer *itransfer)
@@ -806,7 +826,7 @@ static int wince_submit_control_transfer(struct usbi_transfer *itransfer)
 		return LIBUSB_ERROR_NO_MEM;
 	}
 
-	wfd = usbi_create_fd(eventHandle, direction_in ? RW_READ : RW_WRITE);
+	wfd = usbi_create_fd(eventHandle, direction_in ? RW_READ : RW_WRITE, itransfer, &wince_cancel_transfer);
 	if (wfd.fd < 0) {
 		CloseHandle(eventHandle);
 		return LIBUSB_ERROR_NO_MEM;
@@ -848,7 +868,7 @@ static int wince_submit_bulk_transfer(struct usbi_transfer *itransfer)
 		return LIBUSB_ERROR_NO_MEM;
 	}
 
-	wfd = usbi_create_fd(eventHandle, direction_in ? RW_READ : RW_WRITE);
+	wfd = usbi_create_fd(eventHandle, direction_in ? RW_READ : RW_WRITE, itransfer, &wince_cancel_transfer);
 	if (wfd.fd < 0) {
 		CloseHandle(eventHandle);
 		return LIBUSB_ERROR_NO_MEM;
@@ -894,12 +914,6 @@ static int wince_submit_transfer(
 	}
 }
 
-static int wince_cancel_transfer(
-	struct usbi_transfer *itransfer)
-{
-	return LIBUSB_ERROR_NOT_SUPPORTED;
-}
-
 static void wince_transfer_callback(struct usbi_transfer *itransfer, uint32_t io_result, uint32_t io_size)
 {
 	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
@@ -911,6 +925,10 @@ static void wince_transfer_callback(struct usbi_transfer *itransfer, uint32_t io
 	case ERROR_SUCCESS:
 		itransfer->transferred += io_size;
 		status = LIBUSB_TRANSFER_COMPLETED;
+		break;
+	case ERROR_CANCELLED:
+		usbi_dbg("detected transfer cancel");
+		status = LIBUSB_TRANSFER_CANCELLED;
 		break;
 	case ERROR_NOT_SUPPORTED:
 	case ERROR_GEN_FAILURE:

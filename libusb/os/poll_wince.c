@@ -70,7 +70,7 @@
 #define CHECK_INIT_POLLING do {if(!is_polling_set) init_polling();} while(0)
 
 // public fd data
-const struct winfd INVALID_WINFD = {-1, INVALID_HANDLE_VALUE, NULL, RW_NONE};
+const struct winfd INVALID_WINFD = {-1, INVALID_HANDLE_VALUE, NULL, NULL, NULL, RW_NONE};
 struct winfd poll_fd[MAX_FDS];
 // internal fd data
 struct {
@@ -98,13 +98,11 @@ static __inline BOOL cancel_io(int _index)
 	  || (poll_fd[_index].handle == 0) || (poll_fd[_index].overlapped == NULL) ) {
 		return TRUE;
 	}
-	/*
-	TODO: implement calling cancel
-	if (CancelIoEx_Available) {
-		return (*pCancelIoEx)(poll_fd[_index].handle, poll_fd[_index].overlapped);
-	}*/
-	usbi_warn(NULL, "Unable to cancel I/O, not implemented");
-	return FALSE;
+	if (poll_fd[_index].itransfer && poll_fd[_index].cancelTransfer) {
+		// Cancel outstanding transfer
+		(*poll_fd[_index].cancelTransfer)(poll_fd[_index].itransfer);
+	}
+	return TRUE;
 }
 
 // Fake filehandle open and close functions
@@ -335,7 +333,7 @@ out1:
  * read and one for write. Using a single R/W fd is unsupported and will
  * produce unexpected results
  */
-struct winfd usbi_create_fd(HANDLE handle, int access_mode)
+struct winfd usbi_create_fd(HANDLE handle, int access_mode, struct usbi_transfer* itransfer, CancelTransfer* cancelTransfer)
 {
 	int i, fd;
 	struct winfd wfd = INVALID_WINFD;
@@ -346,6 +344,9 @@ struct winfd usbi_create_fd(HANDLE handle, int access_mode)
 	if ((handle == 0) || (handle == INVALID_HANDLE_VALUE)) {
 		return INVALID_WINFD;
 	}
+
+	wfd.itransfer = itransfer;
+	wfd.cancelTransfer = cancelTransfer;
 
 	if ((access_mode != RW_READ) && (access_mode != RW_WRITE)) {
 		usbi_warn(NULL, "only one of RW_READ or RW_WRITE are supported.\n"
