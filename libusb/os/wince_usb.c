@@ -257,6 +257,30 @@ static unsigned long htab_hash(char* str)
 	return idx;
 }
 
+// ceusbkwrapper to libusb error code mapping
+static int translate_driver_error(int error) 
+{
+	switch (error) {
+		case ERROR_INVALID_PARAMETER:
+			return LIBUSB_ERROR_INVALID_PARAM;
+		case ERROR_CALL_NOT_IMPLEMENTED:
+		case ERROR_NOT_SUPPORTED:
+			return LIBUSB_ERROR_NOT_SUPPORTED;
+		case ERROR_NOT_ENOUGH_MEMORY:
+			return LIBUSB_ERROR_NO_MEM;
+		case ERROR_INVALID_HANDLE:
+			return LIBUSB_ERROR_NO_DEVICE;
+		case ERROR_BUSY:
+			return LIBUSB_ERROR_BUSY;
+
+		// Error codes that are either unexpected, or have 
+		// no suitable LIBUSB_ERROR equivilant.
+		case ERROR_CANCELLED:
+		case ERROR_INTERNAL_ERROR:
+		default:
+			return LIBUSB_ERROR_OTHER;
+	}
+}
 
 static int init_dllimports()
 {
@@ -287,16 +311,15 @@ static int init_device(struct libusb_device *dev, UKW_DEVICE drv_dev,
 					   unsigned char bus_addr, unsigned char dev_addr)
 {
 	struct wince_device_priv *priv = _device_priv(dev);
-	int r;
+	int r = LIBUSB_SUCCESS;
 
 	dev->bus_number = bus_addr;
 	dev->device_address = dev_addr;
 	priv->dev = drv_dev;
 
-	r = UkwGetDeviceDescriptor(priv->dev, &(priv->desc));
-	if (r < 0)
-		goto out;
-out:
+	if (!UkwGetDeviceDescriptor(priv->dev, &(priv->desc))) {
+		r = translate_driver_error(GetLastError());
+	}
 	return r;
 }
 
@@ -491,15 +514,16 @@ static int wince_get_device_list(
 
 	success = UkwGetDeviceList(driver_handle, devices, MAX_DEVICE_COUNT, &count);
 	if (!success) {
+		int libusbErr = translate_driver_error(GetLastError());
 		usbi_err(ctx, "could not get devices: %s", windows_error_str(0));
-		return LIBUSB_ERROR_OTHER;
+		return libusbErr;
 	}
 	for(i = 0; i < count; ++i) {
 		release_list_offset = i;
 		success = UkwGetDeviceAddress(devices[i], &bus_addr, &dev_addr, &session_id);
 		if (!success) {
+			r = translate_driver_error(GetLastError());
 			usbi_err(ctx, "could not get device address for %d: %s", i, windows_error_str(0));
-			r = LIBUSB_ERROR_OTHER;
 			goto err_out;
 		}
 		dev = usbi_get_device_by_session_id(ctx, session_id);
@@ -577,7 +601,7 @@ static int wince_get_active_config_descriptor(
 	DWORD actualSize = len;
 	*host_endian = 1;
 	if (!UkwGetConfigDescriptor(priv->dev, UKW_ACTIVE_CONFIGURATION, buffer, len, &actualSize)) {
-		return LIBUSB_ERROR_INVALID_PARAM;
+		return translate_driver_error(GetLastError());
 	}
 	return actualSize;
 }
@@ -591,7 +615,7 @@ static int wince_get_config_descriptor(
 	DWORD actualSize = len;
 	*host_endian = 0;
 	if (!UkwGetConfigDescriptor(priv->dev, config_index, buffer, len, &actualSize)) {
-		return LIBUSB_ERROR_INVALID_PARAM;
+		return translate_driver_error(GetLastError());
 	}
 	return actualSize;
 }
@@ -603,11 +627,7 @@ static int wince_get_configuration(
 	struct wince_device_priv *priv = _device_priv(handle->dev);
 	UCHAR cv = 0;
 	if (!UkwGetConfig(priv->dev, &cv)) {
-		if (GetLastError() == ERROR_INVALID_HANDLE) {
-			return LIBUSB_ERROR_NO_DEVICE;
-		} else {
-			return LIBUSB_ERROR_INVALID_PARAM;
-		}
+		return translate_driver_error(GetLastError());
 	}
 	(*config) = cv;
 	return LIBUSB_SUCCESS;
@@ -623,17 +643,7 @@ static int wince_set_configuration(
 	// libusb when the specified configuration is -1.
 	UCHAR cv = (config < 0) ? 0 : config;
 	if (!UkwSetConfig(priv->dev, cv)) {
-		switch (GetLastError())
-		{
-		case ERROR_NOT_SUPPORTED:
-			return LIBUSB_ERROR_NOT_SUPPORTED;
-		case ERROR_INVALID_HANDLE:
-			return LIBUSB_ERROR_NO_DEVICE;
-		case ERROR_INVALID_PARAMETER:
-			return LIBUSB_ERROR_INVALID_PARAM;
-		default:
-			return LIBUSB_ERROR_NOT_FOUND;
-		}
+		return translate_driver_error(GetLastError());
 	}
 	return LIBUSB_SUCCESS;
 }
@@ -644,7 +654,7 @@ static int wince_claim_interface(
 {
 	struct wince_device_priv *priv = _device_priv(handle->dev);
 	if (!UkwClaimInterface(priv->dev, interface_number)) {
-		return LIBUSB_ERROR_OTHER;
+		return translate_driver_error(GetLastError());
 	}
 	return LIBUSB_SUCCESS;
 }
@@ -655,10 +665,10 @@ static int wince_release_interface(
 {
 	struct wince_device_priv *priv = _device_priv(handle->dev);
 	if (!UkwSetInterfaceAlternateSetting(priv->dev, interface_number, 0)) {
-		return LIBUSB_ERROR_IO;
+		return translate_driver_error(GetLastError());
 	}
 	if (!UkwReleaseInterface(priv->dev, interface_number)) {
-		return LIBUSB_ERROR_OTHER;
+		return translate_driver_error(GetLastError());
 	}
 	return LIBUSB_SUCCESS;
 }
@@ -669,7 +679,7 @@ static int wince_set_interface_altsetting(
 {
 	struct wince_device_priv *priv = _device_priv(handle->dev);
 	if (!UkwSetInterfaceAlternateSetting(priv->dev, interface_number, altsetting)) {
-		return LIBUSB_ERROR_IO;
+		return translate_driver_error(GetLastError());
 	}
 	return LIBUSB_SUCCESS;
 }
@@ -680,7 +690,7 @@ static int wince_clear_halt(
 {
 	struct wince_device_priv *priv = _device_priv(handle->dev);
 	if (!UkwClearHalt(priv->dev, endpoint)) {
-		return LIBUSB_ERROR_IO;
+		return translate_driver_error(GetLastError());
 	}
 	return LIBUSB_SUCCESS;
 }
@@ -690,16 +700,7 @@ static int wince_reset_device(
 {
 	struct wince_device_priv *priv = _device_priv(handle->dev);
 	if (!UkwResetDevice(priv->dev)) {
-		switch (GetLastError()) {
-			case ERROR_NOT_SUPPORTED:
-				return LIBUSB_ERROR_NOT_SUPPORTED;
-			case ERROR_INVALID_HANDLE:
-				return LIBUSB_ERROR_NO_DEVICE;
-			case ERROR_INVALID_PARAMETER:
-				return LIBUSB_ERROR_INVALID_PARAM;
-			default:
-				return LIBUSB_ERROR_NOT_FOUND;
-		}
+		return translate_driver_error(GetLastError());
 	}
 	return LIBUSB_SUCCESS;
 }
@@ -711,14 +712,7 @@ static int wince_kernel_driver_active(
 	struct wince_device_priv *priv = _device_priv(handle->dev);
 	BOOL result = FALSE;
 	if (!UkwKernelDriverActive(priv->dev, interface_number, &result)) {
-		switch (GetLastError()) {
-			case ERROR_INVALID_HANDLE:
-				return LIBUSB_ERROR_NO_DEVICE;
-			case ERROR_NOT_SUPPORTED:
-				return LIBUSB_ERROR_NOT_SUPPORTED;
-			default:
-				return LIBUSB_ERROR_INVALID_PARAM;
-		}
+		return translate_driver_error(GetLastError());
 	}
 	return result ? 1 : 0;
 }
@@ -729,16 +723,7 @@ static int wince_detach_kernel_driver(
 {
 	struct wince_device_priv *priv = _device_priv(handle->dev);
 	if (!UkwDetachKernelDriver(priv->dev, interface_number)) {
-		switch (GetLastError()) {
-			case ERROR_INVALID_HANDLE:
-				return LIBUSB_ERROR_NO_DEVICE;
-			case ERROR_NOT_SUPPORTED:
-				return LIBUSB_ERROR_NOT_SUPPORTED;
-			case ERROR_NOT_FOUND:
-				return LIBUSB_ERROR_NOT_FOUND;
-			default:
-				return LIBUSB_ERROR_INVALID_PARAM;
-		}
+		return translate_driver_error(GetLastError());
 	}
 	return LIBUSB_SUCCESS;
 }
@@ -749,16 +734,7 @@ static int wince_attach_kernel_driver(
 {
 	struct wince_device_priv *priv = _device_priv(handle->dev);
 	if (!UkwAttachKernelDriver(priv->dev, interface_number)) {
-		switch (GetLastError()) {
-			case ERROR_INVALID_HANDLE:
-				return LIBUSB_ERROR_NO_DEVICE;
-			case ERROR_NOT_SUPPORTED:
-				return LIBUSB_ERROR_NOT_SUPPORTED;
-			case ERROR_BUSY:
-				return LIBUSB_ERROR_BUSY;
-			default:
-				return LIBUSB_ERROR_INVALID_PARAM;
-		}
+		return translate_driver_error(GetLastError());
 	}	
 	return LIBUSB_SUCCESS;
 }
@@ -789,12 +765,7 @@ static int wince_cancel_transfer(
 	struct wince_transfer_priv *transfer_priv = (struct wince_transfer_priv*)usbi_transfer_get_os_priv(itransfer);
 	
 	if (!UkwCancelTransfer(priv->dev, transfer_priv->pollable_fd.overlapped, UKW_TF_NO_WAIT)) {
-		switch (GetLastError()) {
-			case ERROR_INVALID_HANDLE:
-				return LIBUSB_ERROR_NO_DEVICE;
-			default:
-				return LIBUSB_ERROR_INVALID_PARAM;
-		}
+		return translate_driver_error(GetLastError());
 	}
 	return LIBUSB_SUCCESS;
 }
@@ -834,9 +805,10 @@ static int wince_submit_control_transfer(struct usbi_transfer *itransfer)
 	transfer_priv->pollable_fd = wfd;
 	ret = UkwIssueControlTransfer(priv->dev, flags, setup, buf, bufLen, &transfer->actual_length, wfd.overlapped);
 	if (!ret) {
+		int libusbErr = translate_driver_error(GetLastError());
 		usbi_err(ctx, "UkwIssueControlTransfer failed: error %d", GetLastError());
 		wince_clear_transfer_priv(itransfer);
-		return LIBUSB_ERROR_IO;
+		return libusbErr;
 	}
 	usbi_add_pollfd(ctx, transfer_priv->pollable_fd.fd, direction_in ? POLLIN : POLLOUT);
 #if !defined(DYNAMIC_FDS)
@@ -877,9 +849,10 @@ static int wince_submit_bulk_transfer(struct usbi_transfer *itransfer)
 	ret = UkwIssueBulkTransfer(priv->dev, flags, transfer->endpoint, transfer->buffer, 
 		transfer->length, &transfer->actual_length, wfd.overlapped);
 	if (!ret) {
+		int libusbErr = translate_driver_error(GetLastError());
 		usbi_err(ctx, "UkwIssueBulkTransfer failed: error %d", GetLastError());
 		wince_clear_transfer_priv(itransfer);
-		return LIBUSB_ERROR_IO;
+		return libusbErr;
 	}
 	usbi_add_pollfd(ctx, transfer_priv->pollable_fd.fd, direction_in ? POLLIN : POLLOUT);
 #if !defined(DYNAMIC_FDS)
@@ -953,7 +926,11 @@ static void wince_transfer_callback(struct usbi_transfer *itransfer, uint32_t io
 		break;
 	}
 	wince_clear_transfer_priv(itransfer);
-	usbi_handle_transfer_completion(itransfer, (enum libusb_transfer_status)status);
+	if (status == LIBUSB_TRANSFER_CANCELLED) {
+		usbi_handle_transfer_cancellation(itransfer);
+	} else {
+		usbi_handle_transfer_completion(itransfer, (enum libusb_transfer_status)status);
+	}
 }
 
 static void wince_handle_callback (struct usbi_transfer *itransfer, uint32_t io_result, uint32_t io_size)
@@ -1006,14 +983,9 @@ static int wince_handle_events(
 		usbi_mutex_unlock(&ctx->flying_transfers_lock);
 
 		if (found) {
-			// Handle async requests that completed synchronously first
 			if (HasOverlappedIoCompleted(transfer_priv->pollable_fd.overlapped)) {
 				io_result = (DWORD)transfer_priv->pollable_fd.overlapped->Internal;
 				io_size = (DWORD)transfer_priv->pollable_fd.overlapped->InternalHigh;
-			// Regular async overlapped (FIXME: This probably is not correct!)
-			/*} else if (GetOverlappedResult(transfer_priv->pollable_fd.handle,
-				transfer_priv->pollable_fd.overlapped, &io_size, false)) {
-				io_result = NO_ERROR;*/
 			} else {
 				io_result = GetLastError();
 			}
