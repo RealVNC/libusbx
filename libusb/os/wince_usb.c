@@ -296,7 +296,6 @@ static int init_device(struct libusb_device *dev, UKW_DEVICE drv_dev,
 	r = UkwGetDeviceDescriptor(priv->dev, &(priv->desc));
 	if (r < 0)
 		goto out;
-	// TODO: cache config descriptor too
 out:
 	return r;
 }

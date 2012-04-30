@@ -105,31 +105,6 @@ static __inline BOOL cancel_io(int _index)
 	return TRUE;
 }
 
-// Fake filehandle open and close functions
-// TODO: Make this properly thread-safe with
-// a standard primative and eliminate the chance
-// of reuse on wrap-around.
-static volatile LONG open_id_spinlock = 0;
-static volatile int open_id = 1;
-int _open()
-{
-	int ret;
-	while (InterlockedExchange((LONG *)&open_id_spinlock, 1) == 1) {
-		Sleep(0);
-	}
-	ret = open_id;
-	++open_id;
-	open_id_spinlock = 0;
-	return ret;
-}
-
-int _close(int handle)
-{
-	// Do nothing
-	return 0;
-};
-
-
 // Init
 void init_polling(void)
 {
@@ -163,7 +138,7 @@ int _fd_to_index_and_lock(int fd)
 {
 	int i;
 
-	if (fd <= 0)
+	if (fd < 0)
 		return -1;
 
 	for (i=0; i<MAX_FDS; i++) {
@@ -237,10 +212,6 @@ void exit_polling(void)
 			// terminating, and we should be able to access the fd
 			// mutex lock before too long
 			EnterCriticalSection(&_poll_fd[i].mutex);
-			if ( (poll_fd[i].fd > 0) && (poll_fd[i].handle != INVALID_HANDLE_VALUE)
-			  &&(poll_fd[i].handle != 0) ) {
-				_close(poll_fd[i].fd);
-			}
 			free_overlapped(poll_fd[i].overlapped);
 			poll_fd[i] = INVALID_WINFD;
 #if defined(DYNAMIC_FDS)
@@ -276,20 +247,10 @@ int usbi_pipe(int filedes[2])
 	overlapped->Internal = STATUS_PENDING;
 	overlapped->InternalHigh = 0;
 
-	// Read end of the "pipe"
-	filedes[0] = _open();
-	if (filedes[0] < 0) {
-		usbi_err(NULL, "could not create pipe: errno %d", errno);
-		goto out1;
-	}
-	// We can use the same handle for both ends
-	filedes[1] = filedes[0];
-	poll_dbg("pipe filedes = %d", filedes[0]);
-
 	// Note: manual reset must be true (second param) as the reset occurs in read
 	overlapped->hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	if(!overlapped->hEvent) {
-		goto out2;
+		goto out;
 	}
 
 	for (i=0; i<MAX_FDS; i++) {
@@ -301,7 +262,13 @@ int usbi_pipe(int filedes[2])
 				continue;
 			}
 
-			poll_fd[i].fd = filedes[0];
+			// Use index as the unique fd number
+			poll_fd[i].fd = i;
+			// Read end of the "pipe"
+			filedes[0] = poll_fd[i].fd;
+			// We can use the same handle for both ends
+			filedes[1] = filedes[0];
+
 			poll_fd[i].handle = DUMMY_HANDLE;
 			poll_fd[i].overlapped = overlapped;
 			// There's no polling on the write end, so we just use READ for our needs
@@ -310,11 +277,8 @@ int usbi_pipe(int filedes[2])
 			return 0;
 		}
 	}
-
 	CloseHandle(overlapped->hEvent);
-out2:
-	_close(filedes[0]);
-out1:
+out:
 	free(overlapped);
 	return -1;
 }
@@ -335,7 +299,7 @@ out1:
  */
 struct winfd usbi_create_fd(HANDLE handle, int access_mode, struct usbi_transfer* itransfer, CancelTransfer* cancelTransfer)
 {
-	int i, fd;
+	int i;
 	struct winfd wfd = INVALID_WINFD;
 	OVERLAPPED* overlapped = NULL;
 
@@ -359,16 +323,8 @@ struct winfd usbi_create_fd(HANDLE handle, int access_mode, struct usbi_transfer
 		wfd.rw = RW_WRITE;
 	}
 
-	// Ensure that we get a non system conflicting unique fd, using
-	// the same fd attribution system as the pipe ends
-	fd = _open();
-	if (fd < 0) {
-		return INVALID_WINFD;
-	}
-
 	overlapped = create_overlapped();
 	if(overlapped == NULL) {
-		_close(fd);
 		return INVALID_WINFD;
 	}
 
@@ -380,7 +336,8 @@ struct winfd usbi_create_fd(HANDLE handle, int access_mode, struct usbi_transfer
 				LeaveCriticalSection(&_poll_fd[i].mutex);
 				continue;
 			}
-			wfd.fd = fd;
+			// Use index as the unique fd number
+			wfd.fd = i;
 			wfd.handle = handle;
 			wfd.overlapped = overlapped;
 			memcpy(&poll_fd[i], &wfd, sizeof(struct winfd));
@@ -396,7 +353,6 @@ struct winfd usbi_create_fd(HANDLE handle, int access_mode, struct usbi_transfer
 		}
 	}
 	free_overlapped(overlapped);
-	_close(fd);
 	return INVALID_WINFD;
 }
 
@@ -404,11 +360,6 @@ void _free_index(int _index)
 {
 	// Cancel any async IO (Don't care about the validity of our handles for this)
 	cancel_io(_index);
-	// close fake handle for devices
-	if ( (poll_fd[_index].handle != INVALID_HANDLE_VALUE)
-		&& (poll_fd[_index].handle != 0) ) {
-		_close(poll_fd[_index].fd);
-	}
 	// close the duplicate handle (if we have an actual duplicate)
 	free_overlapped(poll_fd[_index].overlapped);
 	poll_fd[_index] = INVALID_WINFD;
@@ -710,7 +661,6 @@ poll_exit:
 int usbi_close(int fd)
 {
 	int _index;
-	int r = -1;
 
 	CHECK_INIT_POLLING;
 
@@ -718,20 +668,17 @@ int usbi_close(int fd)
 
 	if (_index < 0) {
 		errno = EBADF;
+		return -1;
 	} else {
 		if (poll_fd[_index].overlapped != NULL) {
 			// Must be a different event for each end of the pipe
 			CloseHandle(poll_fd[_index].overlapped->hEvent);
 			free(poll_fd[_index].overlapped);
 		}
-		r = _close(poll_fd[_index].fd);
-		if (r != 0) {
-			errno = EIO;
-		}
 		poll_fd[_index] = INVALID_WINFD;
 		LeaveCriticalSection(&_poll_fd[_index].mutex);
 	}
-	return r;
+	return 0;
 }
 
 /*
