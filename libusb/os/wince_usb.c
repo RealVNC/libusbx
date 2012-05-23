@@ -789,6 +789,7 @@ static int wince_submit_control_transfer(struct usbi_transfer *itransfer)
 	transfer_priv->pollable_fd = INVALID_WINFD;
 	direction_in = setup->bmRequestType & LIBUSB_ENDPOINT_IN;
 	flags = direction_in ? UKW_TF_IN_TRANSFER : UKW_TF_OUT_TRANSFER;
+	flags |= UKW_TF_SHORT_TRANSFER_OK;
 
 	eventHandle = CreateEvent(NULL, FALSE, FALSE, NULL);
 	if (eventHandle == NULL) {
@@ -832,6 +833,7 @@ static int wince_submit_bulk_transfer(struct usbi_transfer *itransfer)
 	transfer_priv->pollable_fd = INVALID_WINFD;
 	direction_in = transfer->endpoint & LIBUSB_ENDPOINT_IN;
 	flags = direction_in ? UKW_TF_IN_TRANSFER : UKW_TF_OUT_TRANSFER;
+	flags |= UKW_TF_SHORT_TRANSFER_OK;
 
 	eventHandle = CreateEvent(NULL, FALSE, FALSE, NULL);
 	if (eventHandle == NULL) {
