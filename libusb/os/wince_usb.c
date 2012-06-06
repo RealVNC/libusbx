@@ -753,7 +753,6 @@ static void wince_clear_transfer_priv(
 	struct winfd wfd = fd_to_winfd(transfer_priv->pollable_fd.fd);
 	// No need to cancel transfer as it is either complete or abandoned
 	wfd.itransfer = NULL;
-	CloseHandle(wfd.overlapped->hEvent);
 	usbi_free_fd(transfer_priv->pollable_fd.fd);
 }
 

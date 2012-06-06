@@ -239,19 +239,14 @@ int usbi_pipe(int filedes[2])
 
 	CHECK_INIT_POLLING;
 
-	overlapped = calloc(1, sizeof(OVERLAPPED));
+	overlapped = create_overlapped();
+
 	if (overlapped == NULL) {
 		return -1;
 	}
 	// The overlapped must have status pending for signaling to work in poll
 	overlapped->Internal = STATUS_PENDING;
 	overlapped->InternalHigh = 0;
-
-	// Note: manual reset must be true (second param) as the reset occurs in read
-	overlapped->hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-	if(!overlapped->hEvent) {
-		goto out;
-	}
 
 	for (i=0; i<MAX_FDS; i++) {
 		if (poll_fd[i].fd < 0) {
@@ -277,9 +272,7 @@ int usbi_pipe(int filedes[2])
 			return 0;
 		}
 	}
-	CloseHandle(overlapped->hEvent);
-out:
-	free(overlapped);
+	free_overlapped(overlapped);
 	return -1;
 }
 
@@ -670,11 +663,7 @@ int usbi_close(int fd)
 		errno = EBADF;
 		return -1;
 	} else {
-		if (poll_fd[_index].overlapped != NULL) {
-			// Must be a different event for each end of the pipe
-			CloseHandle(poll_fd[_index].overlapped->hEvent);
-			free(poll_fd[_index].overlapped);
-		}
+		free_overlapped(poll_fd[_index].overlapped);
 		poll_fd[_index] = INVALID_WINFD;
 		LeaveCriticalSection(&_poll_fd[_index].mutex);
 	}
