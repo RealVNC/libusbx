@@ -79,6 +79,7 @@
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
 				SubSystem="9"
+				EntryPointSymbol="mainACRTStartup"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -152,6 +153,7 @@
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
 				SubSystem="9"
+				EntryPointSymbol="mainACRTStartup"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -225,6 +227,7 @@
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
 				SubSystem="9"
+				EntryPointSymbol="mainACRTStartup"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -298,6 +301,7 @@
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
 				SubSystem="9"
+				EntryPointSymbol="mainACRTStartup"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -371,6 +375,7 @@
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
 				SubSystem="9"
+				EntryPointSymbol="mainACRTStartup"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -444,6 +449,7 @@
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
 				SubSystem="9"
+				EntryPointSymbol="mainACRTStartup"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -517,6 +523,7 @@
 				Name="VCLinkerTool"
 				GenerateDebugInformation="true"
 				SubSystem="9"
+				EntryPointSymbol="mainACRTStartup"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -592,6 +599,7 @@
 				SubSystem="9"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				EntryPointSymbol="mainACRTStartup"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -667,6 +675,7 @@
 				SubSystem="9"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				EntryPointSymbol="mainACRTStartup"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -742,6 +751,7 @@
 				SubSystem="9"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				EntryPointSymbol="mainACRTStartup"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -817,6 +827,7 @@
 				SubSystem="9"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				EntryPointSymbol="mainACRTStartup"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -892,6 +903,7 @@
 				SubSystem="9"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				EntryPointSymbol="mainACRTStartup"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -967,6 +979,7 @@
 				SubSystem="9"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				EntryPointSymbol="mainACRTStartup"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -1042,6 +1055,7 @@
 				SubSystem="9"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				EntryPointSymbol="mainACRTStartup"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -1083,10 +1097,6 @@
 			>
 			<File
 				RelativePath="..\..\examples\listdevs.c"
-				>
-			</File>
-			<File
-				RelativePath=".\main_wrapper.c"
 				>
 			</File>
 		</Filter>
