@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="lsusb"
+	Name="listdevs"
 	ProjectGUID="{960C3BC3-26D6-49C7-ACE4-0AE65CC049E6}"
-	RootNamespace="lsusb"
+	RootNamespace="listdevs"
 	>
 	<Platforms>
 		<Platform
@@ -98,7 +98,7 @@
 			/>
 			<DeploymentTool
 				ForceDirty="-1"
-				RemoteDirectory="%CSIDL_PROGRAM_FILES%\lsusb"
+				RemoteDirectory="%CSIDL_PROGRAM_FILES%\listdevs"
 				RegisterOutput="0"
 				AdditionalFiles=""
 			/>
@@ -1082,7 +1082,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\examples\lsusb.c"
+				RelativePath="..\..\examples\listdevs.c"
 				>
 			</File>
 			<File
