@@ -204,7 +204,7 @@ static inline void usbi_dbg(const char *format, ...)
 #include <os/poll_wince.h>
 #endif
 
-#if defined(OS_WINDOWS) && !defined(__GCC__)
+#if (defined(OS_WINDOWS) || defined(OS_WINCE)) && !defined(__GCC__)
 #undef HAVE_GETTIMEOFDAY
 int usbi_gettimeofday(struct timeval *tp, void *tzp);
 #define LIBUSB_GETTIMEOFDAY_WIN32

@@ -28,6 +28,7 @@
 
 #include <stdint.h>
 #include <errno.h>
+#include <inttypes.h>
 
 // Forward declares
 static int wince_clock_gettime(int clk_id, struct timespec *tp);
