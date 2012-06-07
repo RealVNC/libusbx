@@ -863,7 +863,7 @@ static int wince_submit_bulk_transfer(struct usbi_transfer *itransfer)
 	return LIBUSB_SUCCESS;
 }
 
-static int wince_submit_iso_transfer(struct usbi_transfer *itransfer, int *updated_fds)
+static int wince_submit_iso_transfer(struct usbi_transfer *itransfer)
 {
 	return LIBUSB_ERROR_NOT_SUPPORTED;
 }
