@@ -812,9 +812,7 @@ static int wince_submit_control_transfer(struct usbi_transfer *itransfer)
 		return libusbErr;
 	}
 	usbi_add_pollfd(ctx, transfer_priv->pollable_fd.fd, direction_in ? POLLIN : POLLOUT);
-#if !defined(DYNAMIC_FDS)
-	usbi_fd_notification(ctx);
-#endif
+	itransfer->flags |= USBI_TRANSFER_UPDATED_FDS;
 
 	return LIBUSB_SUCCESS;
 }
@@ -857,9 +855,7 @@ static int wince_submit_bulk_transfer(struct usbi_transfer *itransfer)
 		return libusbErr;
 	}
 	usbi_add_pollfd(ctx, transfer_priv->pollable_fd.fd, direction_in ? POLLIN : POLLOUT);
-#if !defined(DYNAMIC_FDS)
-	usbi_fd_notification(ctx);
-#endif
+	itransfer->flags |= USBI_TRANSFER_UPDATED_FDS;
 
 	return LIBUSB_SUCCESS;
 }
