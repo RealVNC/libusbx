@@ -30,6 +30,8 @@
 #include <errno.h>
 #include <inttypes.h>
 
+#define STATUS_HALT_FLAG 0x1
+
 // Forward declares
 static int wince_clock_gettime(int clk_id, struct timespec *tp);
 unsigned __stdcall wince_clock_gettime_threaded(void* param);
@@ -305,6 +307,7 @@ static int init_dllimports()
 	DLL_LOAD(ceusbkwrapper.dll, UkwAttachKernelDriver, TRUE);
 	DLL_LOAD(ceusbkwrapper.dll, UkwDetachKernelDriver, TRUE);
 	DLL_LOAD(ceusbkwrapper.dll, UkwIssueBulkTransfer, TRUE);
+	DLL_LOAD(ceusbkwrapper.dll, UkwIsPipeHalted, TRUE);
 	return LIBUSB_SUCCESS;
 }
 
@@ -887,9 +890,52 @@ static int wince_submit_transfer(
 static void wince_transfer_callback(struct usbi_transfer *itransfer, uint32_t io_result, uint32_t io_size)
 {
 	struct libusb_transfer *transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct wince_transfer_priv *transfer_priv = (struct wince_transfer_priv*)usbi_transfer_get_os_priv(itransfer);
+	struct wince_device_priv *priv = _device_priv(transfer->dev_handle->dev);
 	int status;
 
 	usbi_dbg("handling I/O completion with errcode %d", io_result);
+
+	if (io_result == ERROR_NOT_SUPPORTED) {
+		/* The WinCE USB layer (and therefore the USB Kernel Wrapper Driver) will report
+		 * USB_ERROR_STALL/ERROR_NOT_SUPPORTED in situations where the endpoint isn't actually
+		 * stalled.
+		 *
+		 * One example of this is that some devices will occasionally fail to reply to an IN
+		 * token. The WinCE USB layer carries on with the transaction until it is completed
+		 * (or cancelled) but then completes it with USB_ERROR_STALL.
+		 *
+		 * This code therefore needs to confirm that there really is a stall error, but checking
+		 * the pipe status and requesting the endpoint status from the device.
+		 */
+		BOOL halted = FALSE;
+		usbi_dbg("checking I/O completion with errcode ERROR_NOT_SUPPORTED is really a stall");
+		if (UkwIsPipeHalted(priv->dev, transfer->endpoint, &halted) && !halted) {
+			/* The host side doesn't think the endpoint is halted, so check with the device if
+			 * it is stalled.
+			 *
+			 * So form a GET_STATUS control request. This is done synchronously,
+			 * which is a bit naughty, but this is a special corner case. */
+			WORD wStatus = 0;
+			DWORD written = 0;
+			UKW_CONTROL_HEADER ctrlHeader;
+			ctrlHeader.bmRequestType = LIBUSB_REQUEST_TYPE_STANDARD |
+				LIBUSB_ENDPOINT_IN | LIBUSB_RECIPIENT_ENDPOINT;
+			ctrlHeader.bRequest = LIBUSB_REQUEST_GET_STATUS;
+			ctrlHeader.wValue = 0;
+			ctrlHeader.wIndex = transfer->endpoint;
+			ctrlHeader.wLength = sizeof(wStatus);
+			if (UkwIssueControlTransfer(priv->dev,
+					UKW_TF_IN_TRANSFER | UKW_TF_SEND_TO_ENDPOINT,
+					&ctrlHeader, &wStatus, sizeof(wStatus), &written, NULL)) {
+				if (written == sizeof(wStatus) &&
+						(wStatus & STATUS_HALT_FLAG) == 0) {
+					usbi_dbg("Endpoint doesn't appear to be stalled, overriding error");
+					io_result = ERROR_SUCCESS;
+				}
+			}
+		}
+	}
 
 	switch(io_result) {
 	case ERROR_SUCCESS:
