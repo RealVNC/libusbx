@@ -910,7 +910,7 @@ static void wince_transfer_callback(struct usbi_transfer *itransfer, uint32_t io
 		 */
 		BOOL halted = FALSE;
 		usbi_dbg("checking I/O completion with errcode ERROR_NOT_SUPPORTED is really a stall");
-		if (UkwIsPipeHalted(priv->dev, transfer->endpoint, &halted) && !halted) {
+		if (UkwIsPipeHalted(priv->dev, transfer->endpoint, &halted)) {
 			/* The host side doesn't think the endpoint is halted, so check with the device if
 			 * it is stalled.
 			 *
@@ -931,6 +931,8 @@ static void wince_transfer_callback(struct usbi_transfer *itransfer, uint32_t io
 				if (written == sizeof(wStatus) &&
 						(wStatus & STATUS_HALT_FLAG) == 0) {
 					usbi_dbg("Endpoint doesn't appear to be stalled, overriding error");
+					if (halted)
+						UkwClearHalt(priv->dev, transfer->endpoint);
 					io_result = ERROR_SUCCESS;
 				}
 			}
