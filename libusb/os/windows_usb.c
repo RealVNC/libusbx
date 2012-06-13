@@ -2691,14 +2691,11 @@ static int winusb_submit_control_transfer(struct usbi_transfer *itransfer)
 
 	// Sending of set configuration control requests from WinUSB creates issues
 	if ( ((setup->request_type & (0x03 << 5)) == LIBUSB_REQUEST_TYPE_STANDARD)
-	  && (setup->request == LIBUSB_REQUEST_SET_CONFIGURATION) ) {
-		if (setup->value != priv->active_config) {
-			usbi_warn(ctx, "cannot set configuration other than the default one");
-			usbi_free_fd(wfd.fd);
-			return LIBUSB_ERROR_INVALID_PARAM;
-		}
-		wfd.overlapped->Internal = STATUS_COMPLETED_SYNCHRONOUSLY;
-		wfd.overlapped->InternalHigh = 0;
+	  && (setup->request == LIBUSB_REQUEST_SET_CONFIGURATION)
+	  && (setup->value != priv->active_config) ) {
+		usbi_warn(ctx, "cannot set configuration other than the default one");
+		usbi_free_fd(wfd.fd);
+		return LIBUSB_ERROR_INVALID_PARAM;
 	} else {
 		if (!WinUsb_ControlTransfer(wfd.handle, *setup, transfer->buffer + LIBUSB_CONTROL_SETUP_SIZE, size, NULL, wfd.overlapped)) {
 			if(GetLastError() != ERROR_IO_PENDING) {
