@@ -56,9 +56,10 @@ HANDLE driver_handle = INVALID_HANDLE_VALUE;
  * uses retval as errorcode, or, if 0, use GetLastError()
  */
 #if defined(ENABLE_LOGGING)
-static TCHAR* windows_error_str(uint32_t retval)
+static char* windows_error_str(uint32_t retval)
 {
-static TCHAR err_string[ERR_BUFFER_SIZE];
+	static TCHAR wErr_string[ERR_BUFFER_SIZE];
+	static char err_string[ERR_BUFFER_SIZE];
 
 	DWORD size;
 	size_t i;
@@ -66,23 +67,27 @@ static TCHAR err_string[ERR_BUFFER_SIZE];
 
 	error_code = retval?retval:GetLastError();
 	
-	safe_sprintf(err_string, ERR_BUFFER_SIZE, _T("[%d] "), error_code);
+	safe_sprintf(wErr_string, ERR_BUFFER_SIZE, _T("[%d] "), error_code);
 	
 	size = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error_code,
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), &err_string[safe_tcslen(err_string)],
-		ERR_BUFFER_SIZE - (DWORD)safe_tcslen(err_string), NULL);
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), &wErr_string[safe_tcslen(wErr_string)],
+		ERR_BUFFER_SIZE - (DWORD)safe_tcslen(wErr_string), NULL);
 	if (size == 0) {
 		format_error = GetLastError();
 		if (format_error)
-			safe_sprintf(err_string, ERR_BUFFER_SIZE,
+			safe_sprintf(wErr_string, ERR_BUFFER_SIZE,
 				_T("Windows error code %u (FormatMessage error code %u)"), error_code, format_error);
 		else
-			safe_sprintf(err_string, ERR_BUFFER_SIZE, _T("Unknown error code %u"), error_code);
+			safe_sprintf(wErr_string, ERR_BUFFER_SIZE, _T("Unknown error code %u"), error_code);
 	} else {
 		// Remove CR/LF terminators
-		for (i=safe_tcslen(err_string)-1; ((err_string[i]==0x0A) || (err_string[i]==0x0D)); i--) {
-			err_string[i] = 0;
+		for (i=safe_tcslen(wErr_string)-1; ((wErr_string[i]==0x0A) || (wErr_string[i]==0x0D)); i--) {
+			wErr_string[i] = 0;
 		}
+	}
+	if (WideCharToMultiByte(CP_ACP, 0, wErr_string, -1, err_string, ERR_BUFFER_SIZE, NULL, NULL) < 0)
+	{
+		strcpy(err_string, "Unable to convert error string");
 	}
 	return err_string;
 }
