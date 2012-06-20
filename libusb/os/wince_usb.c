@@ -1031,18 +1031,17 @@ static int wince_handle_events(
 		}
 		usbi_mutex_unlock(&ctx->flying_transfers_lock);
 
-		if (found) {
-			if (HasOverlappedIoCompleted(transfer_priv->pollable_fd.overlapped)) {
-				io_result = (DWORD)transfer_priv->pollable_fd.overlapped->Internal;
-				io_size = (DWORD)transfer_priv->pollable_fd.overlapped->InternalHigh;
-			} else {
-				io_result = GetLastError();
-			}
+		if (found && HasOverlappedIoCompleted(transfer_priv->pollable_fd.overlapped)) {
+			io_result = (DWORD)transfer_priv->pollable_fd.overlapped->Internal;
+			io_size = (DWORD)transfer_priv->pollable_fd.overlapped->InternalHigh;
 			usbi_remove_pollfd(ctx, transfer_priv->pollable_fd.fd);
 			// let handle_callback free the event using the transfer wfd
 			// If you don't use the transfer wfd, you run a risk of trying to free a
 			// newly allocated wfd that took the place of the one from the transfer.
 			wince_handle_callback(transfer, io_result, io_size);
+		} else if (found) {
+			usbi_err(ctx, "matching transfer for fd %x has not completed", fds[i]);
+			return LIBUSB_ERROR_OTHER;
 		} else {
 			usbi_err(ctx, "could not find a matching transfer for fd %x", fds[i]);
 			return LIBUSB_ERROR_NOT_FOUND;
