@@ -935,8 +935,8 @@ static void wince_transfer_callback(struct usbi_transfer *itransfer, uint32_t io
 					&ctrlHeader, &wStatus, sizeof(wStatus), &written, NULL)) {
 				if (written == sizeof(wStatus) &&
 						(wStatus & STATUS_HALT_FLAG) == 0) {
-					usbi_dbg("Endpoint doesn't appear to be stalled, overriding error with transfer error");
-					io_result = ERROR_IO_DEVICE;
+					usbi_dbg("Endpoint doesn't appear to be stalled, overriding error with success");
+					io_result = ERROR_SUCCESS;
 				}
 			}
 		}
