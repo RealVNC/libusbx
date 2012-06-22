@@ -304,7 +304,8 @@ static int init_dllimports()
 	DLL_LOAD(ceusbkwrapper.dll, UkwClaimInterface, TRUE);
 	DLL_LOAD(ceusbkwrapper.dll, UkwReleaseInterface, TRUE);
 	DLL_LOAD(ceusbkwrapper.dll, UkwSetInterfaceAlternateSetting, TRUE);
-	DLL_LOAD(ceusbkwrapper.dll, UkwClearHalt, TRUE);
+	DLL_LOAD(ceusbkwrapper.dll, UkwClearHaltHost, TRUE);
+	DLL_LOAD(ceusbkwrapper.dll, UkwClearHaltDevice, TRUE);
 	DLL_LOAD(ceusbkwrapper.dll, UkwGetConfig, TRUE);
 	DLL_LOAD(ceusbkwrapper.dll, UkwSetConfig, TRUE);
 	DLL_LOAD(ceusbkwrapper.dll, UkwResetDevice, TRUE);
@@ -698,7 +699,10 @@ static int wince_clear_halt(
 	unsigned char endpoint)
 {
 	struct wince_device_priv *priv = _device_priv(handle->dev);
-	if (!UkwClearHalt(priv->dev, endpoint)) {
+	if (!UkwClearHaltHost(priv->dev, endpoint)) {
+		return translate_driver_error(GetLastError());
+	}
+	if (!UkwClearHaltDevice(priv->dev, endpoint)) {
 		return translate_driver_error(GetLastError());
 	}
 	return LIBUSB_SUCCESS;
@@ -935,8 +939,13 @@ static void wince_transfer_callback(struct usbi_transfer *itransfer, uint32_t io
 					&ctrlHeader, &wStatus, sizeof(wStatus), &written, NULL)) {
 				if (written == sizeof(wStatus) &&
 						(wStatus & STATUS_HALT_FLAG) == 0) {
-					usbi_dbg("Endpoint doesn't appear to be stalled, overriding error with success");
-					io_result = ERROR_SUCCESS;
+					if (!halted || UkwClearHaltHost(priv->dev, transfer->endpoint)) {
+						usbi_dbg("Endpoint doesn't appear to be stalled, overriding error with success");
+						io_result = ERROR_SUCCESS;
+					} else {
+						usbi_dbg("Endpoint does appear to be stalled, but the host is halted, changing error");
+						io_result = ERROR_IO_DEVICE;
+					}
 				}
 			}
 		}
